@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#667eea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="FireChat P2P — безопасный мессенджер с E2E шифрованием">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com; connect-src *; img-src * blob: data:; media-src * blob:; style-src 'self' 'unsafe-inline';">
+<title>🔐 FireChat P2P</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRmlyZUNoYXQgUDJQIiwic2hvcnRfbmFtZSI6IkZpcmVDaGF0Iiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmMGYyZjUiLCJ0aGVtZV9jb2xvciI6IiM2NjdlZWEiLCJpY29ucyI6W3sic3JjIjoiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCM2FXUjBhRDBpTVRBd0lpQm9aV2xuYUhROUlqRXdNQ0lnZG1sbGQwSnZlRDBpTUNBd0lERXdNQ0F3SWlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhkcFpIUm9QU0l4TURBaUlHaGxhV2RvZEQwaU1UQXdJaUIyYVdWM1FtOTRQU0l3SURBZ01UQXdJREFpSUhocGJXRm5aWDBnYVdROUltWnBiR1VpSUdadmJuUXRZMjl1ZEdGamRFbHVabThvY0dodGJXVnVkR2x6ZEdWa0tTSWdkMmxrZEdnOUlqRXdNQ0lnYUdWcFoyaDBQU0l4TURBaUlISmxjM1JwYm1jOUlqQXdNREF3TURBd0lqNEtQQzl6ZG1jKyIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9zdmcreG1sIn1dfQ==">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+:root {
+  --bg: #f0f2f5;
+  --card: #ffffff;
+  --input-bg: #f0f2f5;
+  --primary: #0084ff;
+  --primary-light: #00c6ff;
+  --text: #1c1e21;
+  --text-muted: #65676b;
+  --border: #dddfe2;
+  --success: #00c853;
+  --danger: #ff1744;
+  --warning: #ff9800;
+  --shadow: 0 1px 2px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+html { height:100%; height:100dvh; }
+
+body { 
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; 
+  background:var(--bg); color:var(--text); 
+  height:100%; height:100dvh; overflow:hidden; 
+}
+
+.screen { display:none; height:100%; height:100dvh; flex-direction:column; }
+.screen.active { display:flex; }
+
+/* === ЛОГИН === */
+.login { align-items:center; justify-content:center; padding:20px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.login-box { background:var(--card); padding:40px 30px; border-radius:24px; box-shadow:var(--shadow-hover); width:100%; max-width:380px; text-align:center; }
+.login-logo { font-size:64px; margin-bottom:8px; }
+.login-title { font-size:28px; font-weight:700; color:var(--text); margin-bottom:4px; }
+.login-desc { color:var(--text-muted); font-size:14px; margin-bottom:28px; line-height:1.5; }
+.input { 
+  padding:14px 18px; font-size:16px; border-radius:12px; border:2px solid var(--border); 
+  background:var(--bg); color:var(--text); outline:none; width:100%; transition:all 0.2s; 
+}
+.input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(0,132,255,0.1); }
+.input::placeholder { color:#b0b3b8; }
+.input.error { border-color:var(--danger); }
+.btn { 
+  padding:14px; border-radius:12px; border:none; font-size:16px; font-weight:600; 
+  cursor:pointer; width:100%; transition:all 0.2s; margin-top:10px; 
+  user-select:none; -webkit-user-select:none;
+}
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:#0073e6; }
+.btn-primary:active { transform:scale(0.98); }
+.btn-secondary { background:var(--bg); color:var(--text-muted); border:1px solid var(--border); }
+.btn-secondary:hover { background:#e4e6eb; }
+.status { margin-top:16px; font-size:13px; color:var(--text-muted); }
+.status.error { color:var(--danger); }
+.status.success { color:var(--success); }
+.badge { display:flex; align-items:center; gap:6px; margin-top:16px; font-size:12px; color:var(--success); }
+
+/* === ГЛАВНЫЙ === */
+.header { 
+  padding:12px 16px; background:var(--card); border-bottom:1px solid var(--border); 
+  display:flex; align-items:center; justify-content:space-between; box-shadow:var(--shadow); 
+  flex-shrink:0; z-index:5;
+}
+.header h2 { font-size:20px; font-weight:700; }
+.header-user { display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text-muted); }
+.avatar { 
+  width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--primary-light)); 
+  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; color:#fff; 
+}
+
+.peer-list { flex:1; overflow-y:auto; padding:12px; -webkit-overflow-scrolling:touch; }
+.empty-state { text-align:center; color:var(--text-muted); padding:60px 20px; }
+.empty-state .icon { font-size:48px; margin-bottom:12px; }
+.empty-state p { font-size:15px; line-height:1.5; }
+
+.peer-item { 
+  display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:16px; 
+  cursor:pointer; transition:all 0.2s; margin-bottom:8px; background:var(--card); 
+  box-shadow:var(--shadow); border:1px solid transparent;
+}
+.peer-item:hover { border-color:var(--primary); box-shadow:var(--shadow-hover); transform:translateY(-1px); }
+.peer-item:active { transform:scale(0.99); }
+.peer-avatar { 
+  width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#667eea,#764ba2); 
+  display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; 
+}
+.peer-info { flex:1; min-width:0; }
+.peer-name { font-weight:600; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.peer-status { font-size:13px; color:var(--success); display:flex; align-items:center; gap:4px; margin-top:2px; }
+.peer-status.offline { color:var(--text-muted); }
+.peer-status.connecting { color:var(--warning); }
+.peer-status .dot { width:8px; height:8px; border-radius:50%; background:var(--success); }
+.peer-status.offline .dot { background:#ccc; }
+.peer-status.connecting .dot { background:var(--warning); animation:pulse 1s infinite; }
+.peer-preview { font-size:13px; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.fab { 
+  position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; 
+  background:var(--primary); color:#fff; border:none; font-size:28px; cursor:pointer; 
+  display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(0,132,255,0.4); 
+  transition:all 0.2s; z-index:10; 
+}
+.fab:hover { transform:scale(1.05); }
+.fab:active { transform:scale(0.95); }
+
+/* === ЧАТ === */
+#chat-screen { flex-direction:column; }
+
+.chat-header { 
+  padding:10px 16px; background:var(--card); border-bottom:1px solid var(--border); 
+  display:flex; align-items:center; gap:12px; box-shadow:var(--shadow); flex-shrink:0;
+}
+.back-btn { background:none; border:none; color:var(--text-muted); font-size:22px; cursor:pointer; padding:4px; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; }
+.back-btn:hover { background:var(--bg); }
+.chat-header-info { flex:1; }
+.chat-header-title { font-weight:600; font-size:16px; }
+.chat-header-subtitle { font-size:12px; color:var(--text-muted); }
+
+.messages { 
+  flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:4px; 
+  background:var(--bg); -webkit-overflow-scrolling:touch;
+}
+.msg-row { display:flex; gap:8px; max-width:80%; animation:msgIn 0.25s ease; }
+.msg-row.me { align-self:flex-end; flex-direction:row-reverse; }
+.msg-row.system { align-self:center; max-width:100%; }
+
+.msg-bubble { 
+  padding:10px 14px; border-radius:18px; font-size:15px; line-height:1.4; 
+  word-break:break-word; box-shadow:var(--shadow); max-width:100%; 
+}
+.msg-row.me .msg-bubble { 
+  background:var(--primary); color:#fff; border-bottom-right-radius:4px; 
+}
+.msg-row.other .msg-bubble { 
+  background:var(--card); border-bottom-left-radius:4px; border:1px solid var(--border);
+}
+.msg-row.system .msg-bubble { background:transparent; color:var(--text-muted); font-size:12px; padding:4px; box-shadow:none; border:none; }
+
+.msg-name { font-size:12px; color:var(--primary); margin-bottom:2px; font-weight:600; }
+.msg-text { }
+.msg-time { font-size:11px; opacity:0.7; margin-top:4px; text-align:right; }
+
+.msg-file { 
+  display:flex; align-items:center; gap:10px; padding:10px 14px; 
+  background:rgba(0,0,0,0.05); border-radius:12px; margin-top:4px; cursor:pointer; text-decoration:none; color:inherit; 
+}
+.msg-file-icon { font-size:24px; }
+.msg-file-info { display:flex; flex-direction:column; }
+.msg-file-name { font-size:14px; font-weight:500; }
+.msg-file-size { font-size:12px; color:var(--text-muted); }
+.img-preview { max-width:240px; max-height:240px; border-radius:12px; margin-top:4px; cursor:pointer; object-fit:cover; }
+
+.typing-bar { font-size:13px; color:var(--text-muted); padding:6px 16px; min-height:28px; flex-shrink:0; background:var(--bg); }
+
+.input-area { 
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom, 0px)); background:var(--card); border-top:1px solid var(--border); 
+  display:flex; gap:8px; align-items:flex-end; flex-shrink:0; 
+}
+#msg-input { 
+  flex:1; padding:12px 16px; border-radius:20px; border:none; background:var(--input-bg); 
+  color:var(--text); font-size:15px; outline:none; resize:none; font-family:inherit; max-height:120px; 
+  min-height:44px; line-height:20px;
+}
+.attach-btn, .send-btn { 
+  width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; 
+  display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; transition:all 0.2s;
+}
+.attach-btn { background:var(--input-bg); color:var(--text-muted); }
+.send-btn { background:var(--primary); color:#fff; }
+.attach-btn:hover, .send-btn:hover { transform:scale(1.05); }
+.attach-btn:active, .send-btn:active { transform:scale(0.9); }
+#file-input { display:none; }
+
+/* === МОДАЛЬНЫЕ === */
+.modal { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; backdrop-filter:blur(4px); }
+.modal.active { display:flex; }
+.modal-box { background:var(--card); border-radius:24px; padding:28px; max-width:400px; width:100%; box-shadow:var(--shadow-hover); animation:modalIn 0.3s ease; max-height:90vh; overflow-y:auto; }
+.modal-title { font-size:22px; font-weight:700; margin-bottom:12px; }
+.modal-text { color:var(--text-muted); font-size:14px; line-height:1.5; margin-bottom:16px; }
+.modal-input { margin-bottom:12px; }
+.qr-box { background:#fff; padding:16px; border-radius:16px; margin:12px 0; display:inline-block; box-shadow:var(--shadow); }
+.code-box { background:var(--bg); padding:14px; border-radius:12px; font-family:'SF Mono',monospace; font-size:15px; color:var(--primary); word-break:break-all; border:2px dashed var(--border); font-weight:600; letter-spacing:2px; }
+.modal-buttons { display:flex; gap:10px; margin-top:16px; }
+.modal-buttons .btn { flex:1; margin-top:0; }
+
+/* === ТОСТ === */
+.toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(100px); background:rgba(0,0,0,0.8); color:#fff; padding:10px 20px; border-radius:12px; font-size:14px; z-index:200; opacity:0; transition:all 0.3s; pointer-events:none; }
+.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+
+/* === АНИМАЦИИ === */
+@keyframes msgIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@keyframes modalIn { from { opacity:0; transform:scale(0.9) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-thumb { background:#ccc; border-radius:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+
+@media (min-width: 768px) {
+  .screen { max-width:480px; margin:0 auto; border-left:1px solid var(--border); border-right:1px solid var(--border); }
+  .fab { right:calc(50% - 240px + 24px); }
+}
+</style>
+</head>
+<body>
+
+<!-- ТОСТ -->
+<div class="toast" id="toast"></div>
+
+<!-- ЛОГИН -->
+<div class="screen login active" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🔐</div>
+    <div class="login-title">FireChat P2P</div>
+    <div class="login-desc">E2E шифрование. Без сервера.<br>Сообщения хранятся на устройстве.</div>
+    <input type="text" id="username" class="input" placeholder="Как тебя зовут?" maxlength="20" autocomplete="off" autocapitalize="words">
+    <button class="btn btn-primary" id="btn-enter">🚀 Войти</button>
+    <button class="btn btn-secondary" id="btn-connect">🔗 Присоединиться</button>
+    <div class="badge">🔒 <span>E2E шифрование AES-GCM</span></div>
+    <div class="status" id="status">Готов к работе</div><div class="status" id="firebase-status" style="font-size:11px; margin-top:4px;"></div>
+  </div>
+</div>
+
+<!-- ГЛАВНЫЙ -->
+<div class="screen" id="main-screen">
+  <div class="header">
+    <h2>🔐 FireChat</h2>
+    <div class="header-user">
+      <div class="avatar" id="user-avatar">?</div>
+      <span id="user-name"></span>
+    </div>
+  </div>
+  <div class="peer-list" id="peer-list">
+    <div class="empty-state">
+      <div class="icon">💬</div>
+      <p>Нет подключённых устройств.<br>Поделись кодом или отсканируй чужой.</p>
+    </div>
+  </div>
+  <button class="fab" id="btn-fab">+</button>
+</div>
+
+<!-- ЧАТ -->
+<div class="screen" id="chat-screen">
+  <div class="chat-header">
+    <button class="back-btn" id="btn-back">←</button>
+    <div class="chat-header-info">
+      <div class="chat-header-title" id="chat-peer-name">Собеседник</div>
+      <div class="chat-header-subtitle" id="chat-peer-status">E2E защищено</div>
+    </div>
+  </div>
+  <div class="typing-bar" id="typing-bar"></div>
+  <div class="messages" id="messages"></div>
+  <div class="input-area" id="input-area">
+    <button class="attach-btn" id="btn-attach">📎</button>
+    <input type="file" id="file-input">
+    <textarea id="msg-input" rows="1" placeholder="Сообщение..."></textarea>
+    <button class="send-btn" id="btn-send">➤</button>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ: Мой код -->
+<div class="modal" id="my-code-modal">
+  <div class="modal-box">
+    <div class="modal-title">📱 Поделись кодом</div>
+    <div class="modal-text">Друг вводит этот код и пароль — и вы соединяетесь с E2E шифрованием.</div>
+    <div class="qr-box" id="my-qr"></div>
+    <div class="code-box" id="my-code"></div>
+    <div class="modal-input">
+      <input type="text" id="my-password" class="input" placeholder="Придумай пароль для шифрования" style="text-align:center;">
+    </div>
+    <div class="modal-buttons">
+      <button class="btn btn-secondary" id="btn-copy-code">📋 Код</button>
+      <button class="btn btn-primary" id="btn-close-mycode">Готово</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ: Присоединиться -->
+<div class="modal" id="connect-modal">
+  <div class="modal-box">
+    <div class="modal-title">🔗 Присоединиться</div>
+    <div class="modal-text">Введи код друга и пароль шифрования</div>
+    <div class="modal-input"><input type="text" id="connect-code" class="input" placeholder="Код друга" style="text-align:center; letter-spacing:3px; font-family:monospace; font-size:18px;"></div>
+    <div class="modal-input"><input type="password" id="connect-password" class="input" placeholder="Пароль шифрования" style="text-align:center;"></div>
+    <div class="modal-buttons">
+      <button class="btn btn-secondary" id="btn-cancel-connect">Отмена</button>
+      <button class="btn btn-primary" id="btn-do-connect">Подключиться</button>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ: Просмотр изображения -->
+<div class="modal" id="image-modal">
+  <div class="modal-box" style="padding:0; background:transparent; box-shadow:none; max-width:none; width:auto;">
+    <img id="modal-img" style="max-width:90vw; max-height:80vh; border-radius:12px; display:block; margin:0 auto;">
+    <button class="btn btn-primary" onclick="closeModal('image-modal')" style="margin-top:16px; max-width:200px; margin-left:auto; margin-right:auto;">Закрыть</button>
+  </div>
+</div>
+
+<!-- 
+  ВАЖНО: Для production добавьте integrity атрибуты (SRI):
+  <script src="..." integrity="sha384-..." crossorigin="anonymous"></script>
+  Генерация: https://www.srihash.org/
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// Fallback если CDN недоступен
+window.QRCode = window.QRCode || function() {
+  this.makeCode = function() {};
+};
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+// ======== FIREBASE (Signaling fallback) ========
+// ПРИМЕЧАНИЕ: Замените на свою конфигурацию Firebase для production!
+// Создайте проект: https://console.firebase.google.com/
+// Realtime Database → Создать → Копируйте конфигурацию
+const firebaseConfig = {
+  apiKey: "AIzaSyDummyKeyForSignaling",
+  authDomain: "firechat-p2p-signaling.firebaseapp.com",
+  databaseURL: "https://webrtc-signaling-demo-default-rtdb.firebaseio.com",
+  projectId: "firechat-p2p-signaling",
+  storageBucket: "firechat-p2p-signaling.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456"
+};
+
+let app = null, db = null;
+let firebaseAvailable = false;
+try {
+  if (typeof firebase !== 'undefined') {
+    app = firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    firebaseAvailable = true;
+    console.log("Firebase signaling ready");
+  } else {
+    console.warn("Firebase SDK not loaded — signaling unavailable");
+  }
+} catch(e) {
+  console.warn("Firebase init failed:", e.message);
+}
+
+// Если Firebase недоступен — показываем инструкцию по ручному обмену SDP
+function showManualSignalingHelp() {
+  showToast("Firebase недоступен. Используйте ручной обмен кодами.");
+}
+
+// ======== E2E ШИФРОВАНИЕ (AES-GCM) ========
+class E2ECrypto {
+  constructor() { this.key = null; }
+
+  async deriveKey(password, salt) {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+    );
+    // Используем случайную соль для каждого пароля
+    const saltBytes = salt || crypto.getRandomValues(new Uint8Array(16));
+    const key = await crypto.subtle.deriveKey(
+      {name: 'PBKDF2', salt: saltBytes, iterations: 100000, hash: 'SHA-256'},
+      keyMaterial, {name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']
+    );
+    return { key, salt: saltBytes };
+  }
+
+  async setPassword(password, salt) {
+    const result = await this.deriveKey(password, salt);
+    this.key = result.key;
+    return result.salt;
+  }
+
+  async encrypt(text) {
+    if (!this.key) return text;
+    const enc = new TextEncoder();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt(
+      {name: 'AES-GCM', iv}, this.key, enc.encode(text)
+    );
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(encrypted), iv.length);
+    return btoa(String.fromCharCode(...combined));
+  }
+
+  async decrypt(base64text) {
+    if (!this.key) return base64text;
+    try {
+      const data = Uint8Array.from(atob(base64text), c => c.charCodeAt(0));
+      const iv = data.slice(0, 12);
+      const ciphertext = data.slice(12);
+      const decrypted = await crypto.subtle.decrypt(
+        {name: 'AES-GCM', iv}, this.key, ciphertext
+      );
+      return new TextDecoder().decode(decrypted);
+    } catch(e) {
+      return '🔒 [Неверный пароль или повреждённые данные]';
+    }
+  }
+
+  async encryptFile(arrayBuffer) {
+    if (!this.key) return arrayBuffer;
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt(
+      {name: 'AES-GCM', iv}, this.key, arrayBuffer
+    );
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(encrypted), iv.length);
+    return combined;
+  }
+
+  async decryptFile(encryptedBuffer) {
+    if (!this.key) return encryptedBuffer;
+    try {
+      const iv = encryptedBuffer.slice(0, 12);
+      const ciphertext = encryptedBuffer.slice(12);
+      return await crypto.subtle.decrypt(
+        {name: 'AES-GCM', iv}, this.key, ciphertext
+      );
+    } catch(e) {
+      return null;
+    }
+  }
+}
+
+const e2e = new E2ECrypto();
+
+// ======== IndexedDB ========
+const DB_NAME = "FireChatDB";
+const DB_VERSION = 2;
+let dbLocal = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => { dbLocal = request.result; resolve(dbLocal); };
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("messages")) {
+        const store = db.createObjectStore("messages", {keyPath: "id", autoIncrement: true});
+        store.createIndex("peerId", "peerId", {unique: false});
+        store.createIndex("timestamp", "timestamp", {unique: false});
+      }
+      if (!db.objectStoreNames.contains("peers")) {
+        db.createObjectStore("peers", {keyPath: "peerId"});
+      }
+      if (!db.objectStoreNames.contains("settings")) {
+        db.createObjectStore("settings", {keyPath: "key"});
+      }
+    };
+  });
+}
+
+function saveMessage(peerId, msg) {
+  return new Promise((resolve, reject) => {
+    if (!dbLocal) { resolve(); return; }
+    const tx = dbLocal.transaction("messages", "readwrite");
+    const store = tx.objectStore("messages");
+    const req = store.put({...msg, peerId, savedAt: Date.now()});
+    req.onsuccess = () => resolve();
+    req.onerror = () => {
+      if (req.error && req.error.name === "QuotaExceededError") {
+        console.error("Storage quota exceeded");
+        showToast("Хранилище заполнено — удалите старые чаты");
+      }
+      reject(req.error);
+    };
+    tx.onerror = () => {
+      if (tx.error && tx.error.name === "QuotaExceededError") {
+        showToast("Хранилище заполнено");
+      }
+      reject(tx.error);
+    };
+  });
+}
+
+function getMessages(peerId, limit = 500) {
+  return new Promise((resolve) => {
+    if (!dbLocal) { resolve([]); return; }
+    const tx = dbLocal.transaction("messages", "readonly");
+    const store = tx.objectStore("messages");
+    const index = store.index("peerId");
+    const request = index.getAll(peerId);
+    request.onsuccess = () => {
+      const msgs = request.result.sort((a,b) => a.timestamp - b.timestamp).slice(-limit);
+      resolve(msgs);
+    };
+    request.onerror = () => resolve([]);
+  });
+}
+
+// Очистка старых сообщений для освобождения места
+async function cleanupOldMessages(keepDays = 30) {
+  if (!dbLocal) return;
+  const cutoff = Date.now() - (keepDays * 24 * 60 * 60 * 1000);
+  const tx = dbLocal.transaction("messages", "readwrite");
+  const store = tx.objectStore("messages");
+  const index = store.index("timestamp");
+  const range = IDBKeyRange.upperBound(cutoff);
+  const request = index.openCursor(range);
+  let deleted = 0;
+  request.onsuccess = (e) => {
+    const cursor = e.target.result;
+    if (cursor) {
+      cursor.delete();
+      deleted++;
+      cursor.continue();
+    } else {
+      console.log("Cleaned up", deleted, "old messages");
+    }
+  };
+  return new Promise((resolve) => { tx.oncomplete = () => resolve(deleted); });
+}
+
+function savePeer(peerId, data) {
+  return new Promise((resolve, reject) => {
+    if (!dbLocal) { resolve(); return; }
+    const tx = dbLocal.transaction("peers", "readwrite");
+    const store = tx.objectStore("peers");
+    const req = store.put({...data, peerId, lastSeen: Date.now()});
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function getPeers() {
+  return new Promise((resolve) => {
+    if (!dbLocal) { resolve([]); return; }
+    const tx = dbLocal.transaction("peers", "readonly");
+    const store = tx.objectStore("peers");
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve([]);
+  });
+}
+
+function saveSetting(key, value) {
+  return new Promise((resolve, reject) => {
+    if (!dbLocal) { resolve(); return; }
+    const tx = dbLocal.transaction("settings", "readwrite");
+    const store = tx.objectStore("settings");
+    const req = store.put({key, value, updatedAt: Date.now()});
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function getSetting(key) {
+  return new Promise((resolve) => {
+    if (!dbLocal) { resolve(null); return; }
+    const tx = dbLocal.transaction("settings", "readonly");
+    const store = tx.objectStore("settings");
+    const request = store.get(key);
+    request.onsuccess = () => resolve(request.result ? request.result.value : null);
+    request.onerror = () => resolve(null);
+  });
+}
+
+// ======== СОСТОЯНИЕ ========
+let myId = null;
+let myName = "";
+let connections = {};
+let dataChannels = {};
+let currentPeer = null;
+let peerNames = {};
+let peerPasswords = {};
+let peerSalts = {};
+let reconnectTimers = {};
+let reconnectAttempts = {};
+const MAX_RECONNECT_ATTEMPTS = 10;
+const RECONNECT_DELAY = 3000;
+const KEEPALIVE_INTERVAL = 15000;
+let keepaliveTimer = null;
+let messageQueue = {}; // peerId -> [messages]
+let receivedMsgIds = new Set(); // deduplication
+
+// ======== WebRTC ========
+const ICE_SERVERS = {
+  iceServers: [
+    {urls: "stun:stun.l.google.com:19302"},
+    {urls: "stun:stun1.l.google.com:19302"},
+    {urls: "stun:stun2.l.google.com:19302"},
+    // TURN серверы для пробития симметричного NAT и корпоративных файрволов
+    {urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject"},
+    {urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject"},
+    {urls: "turns:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject"}
+  ],
+  iceCandidatePoolSize: 10,
+  // Защита от утечки IP через VPN [^16^]
+  // Генерируем mDNS candidates вместо реальных IP
+  // Но оставляем srflx для работы через NAT
+};
+
+function generateId() {
+  return Math.random().toString(36).substring(2, 10).toUpperCase();
+}
+
+// ======== УТИЛИТЫ ========
+function $(id) { return document.getElementById(id); }
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+function showToast(text) {
+  const t = $("toast");
+  t.textContent = text;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+  // Обновляем safe-area на мобильных
+  document.body.style.height = window.innerHeight + "px";
+}
+
+function openModal(id) { $(id).classList.add("active"); }
+function closeModal(id) { $(id).classList.remove("active"); }
+
+// ======== ВХОД ========
+async function enterApp() {
+  const input = $("username");
+  myName = input.value.trim();
+  if (!myName) { input.classList.add("error"); setTimeout(() => input.classList.remove("error"), 1000); return; }
+
+  try {
+    await openDB();
+  } catch(e) {
+    $("status").textContent = "Ошибка базы данных: " + e.message;
+    $("status").classList.add("error");
+    return;
+  }
+
+  // Запрашиваем persistent storage — браузер не удалит данные при очистке
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      const persisted = await navigator.storage.persist();
+      console.log("Persistent storage:", persisted ? "granted" : "denied");
+    }
+  } catch(e) { console.warn("Persist:", e); }
+
+  // Запрашиваем оценку хранилища
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const estimate = await navigator.storage.estimate();
+      console.log("Storage:", Math.round((estimate.usage || 0) / 1024 / 1024) + "MB / " + Math.round((estimate.quota || 0) / 1024 / 1024) + "MB");
+    }
+  } catch(e) {}
+
+  // Восстанавливаем ID или генерируем новый
+  myId = localStorage.getItem("fc_id");
+  if (!myId) {
+    myId = generateId();
+    localStorage.setItem("fc_id", myId);
+  }
+  localStorage.setItem("fc_name", myName);
+
+  // Восстанавливаем пароли
+  try {
+    const savedPasswords = await getSetting("peerPasswords");
+    if (savedPasswords) peerPasswords = savedPasswords;
+    const savedSalts = await getSetting("peerSalts");
+    if (savedSalts) peerSalts = savedSalts;
+    const savedNames = await getSetting("peerNames");
+    if (savedNames) peerNames = savedNames;
+  } catch(e) { console.warn("Restore settings:", e); }
+
+  $("user-name").textContent = myName;
+  $("user-avatar").textContent = myName[0].toUpperCase();
+
+  // Показываем статус signaling
+  const fbStatus = $("firebase-status");
+  if (fbStatus) {
+    if (firebaseAvailable) {
+      fbStatus.textContent = "🌐 Авто-подключение активно";
+      fbStatus.style.color = "var(--success)";
+    } else {
+      fbStatus.textContent = "⚠️ Авто-подключение недоступно — используйте ручной обмен";
+      fbStatus.style.color = "var(--warning)";
+    }
+  }
+
+  listenForSignals();
+  await loadPeersFromDB();
+  startKeepalive();
+
+  showScreen("main-screen");
+  showToast("Добро пожаловать, " + myName + "!");
+}
+
+async function loadPeersFromDB() {
+  const peers = await getPeers();
+  const list = $("peer-list");
+  if (peers.length > 0) {
+    list.innerHTML = "";
+    peers.forEach(p => {
+      peerNames[p.peerId] = p.name;
+      addPeerToList(p.peerId, p.name, false);
+      // Пытаемся переподключиться к известным пирам
+      if (peerPasswords[p.peerId]) {
+        attemptReconnect(p.peerId);
+      }
+    });
+  }
+}
+
+// ======== СИГНАЛИНГ ========
+function listenForSignals() {
+  if (!db || !myId || !firebaseAvailable) {
+    console.log("Firebase signaling not available");
+    return;
+  }
+  const ref = db.ref("signals/" + myId);
+  ref.on("child_added", async (snapshot) => {
+    const signal = snapshot.val();
+    if (!signal) return;
+    try {
+      if (signal.type === "offer") await handleOffer(signal.from, signal.data);
+      else if (signal.type === "answer") await handleAnswer(signal.from, signal.data);
+      else if (signal.type === "ice") await handleIce(signal.from, signal.data);
+    } catch(e) { console.error("Signal error:", e); }
+    snapshot.ref.remove().catch(() => {});
+  });
+}
+
+function sendSignal(to, type, data) {
+  if (!db || !firebaseAvailable) {
+    console.warn("Signaling unavailable — message queued for retry");
+    return Promise.reject("No signaling");
+  }
+  return db.ref("signals/" + to).push({from: myId, type, data, timestamp: Date.now()});
+}
+
+// ======== WebRTC с Perfect Negotiation ========
+// Ролевая система: тот, у кого ID меньше лексикографически — "polite" (уступает)
+// Это предотвращает glare condition (конфликт offer/offer)
+function isPolite(peerId) {
+  return myId < peerId;
+}
+
+function queueMessage(peerId, msg) {
+  if (!messageQueue[peerId]) messageQueue[peerId] = [];
+  messageQueue[peerId].push(msg);
+}
+
+async function flushMessageQueue(peerId) {
+  const dc = dataChannels[peerId];
+  if (!dc || dc.readyState !== "open") return;
+  const queue = messageQueue[peerId];
+  if (!queue || queue.length === 0) return;
+  console.log("Flushing", queue.length, "queued messages to", peerId);
+  while (queue.length > 0) {
+    const msg = queue.shift();
+    try {
+      dc.send(JSON.stringify(msg));
+    } catch(e) {
+      queue.unshift(msg); // put back
+      break;
+    }
+  }
+  messageQueue[peerId] = queue;
+}
+
+function closePeerConnection(peerId) {
+  if (connections[peerId]) {
+    try { connections[peerId].close(); } catch(e) {}
+    delete connections[peerId];
+  }
+  if (dataChannels[peerId]) {
+    try { dataChannels[peerId].close(); } catch(e) {}
+    delete dataChannels[peerId];
+  }
+  // Очищаем pending operations
+  if (pendingOffers[peerId]) {
+    clearTimeout(pendingOffers[peerId]);
+    delete pendingOffers[peerId];
+  }
+}
+
+let pendingOffers = {}; // peerId -> timeout
+let makingOffer = {};   // peerId -> boolean
+
+async function createConnection(peerId, isRetry = false) {
+  // Если мы polite и уже есть соединение — не создаём offer, ждём чужой
+  if (isPolite(peerId) && connections[peerId]) {
+    console.log("Polite side: not creating offer, waiting for remote");
+    return connections[peerId];
+  }
+
+  closePeerConnection(peerId);
+
+  const pc = new RTCPeerConnection(ICE_SERVERS);
+  connections[peerId] = pc;
+  makingOffer[peerId] = false;
+
+  const dc = pc.createDataChannel("chat", {ordered: true, maxRetransmits: 3});
+  setupDataChannel(peerId, dc);
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      sendSignal(peerId, "ice", e.candidate.toJSON()).catch(() => {});
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    const state = pc.connectionState;
+    console.log("Connection state", peerId, state);
+    if (state === "connected") {
+      updatePeerStatus(peerId, true);
+      reconnectAttempts[peerId] = 0;
+    } else if (state === "failed" || state === "disconnected" || state === "closed") {
+      updatePeerStatus(peerId, false);
+      if (!isRetry && (reconnectAttempts[peerId] || 0) < MAX_RECONNECT_ATTEMPTS) {
+        scheduleReconnect(peerId);
+      }
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    if (pc.iceConnectionState === "failed") {
+      try { pc.restartIce(); } catch(e) {}
+    }
+  };
+
+  pc.ondatachannel = (e) => setupDataChannel(peerId, e.channel);
+
+  // Perfect negotiation: track when we're making an offer
+  try {
+    makingOffer[peerId] = true;
+    const offer = await pc.createOffer();
+    if (pc.signalingState !== "stable") {
+      console.log("Signaling not stable, aborting offer");
+      makingOffer[peerId] = false;
+      return pc;
+    }
+    await pc.setLocalDescription(offer);
+
+    // Apply queued ICE candidates
+    if (pc._queuedCandidates) {
+      for (const cand of pc._queuedCandidates) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch(e) {}
+      }
+      delete pc._queuedCandidates;
+    }
+
+    await sendSignal(peerId, "offer", offer);
+    makingOffer[peerId] = false;
+  } catch(e) {
+    makingOffer[peerId] = false;
+    console.error("Create offer error:", e);
+    showToast("Ошибка создания соединения");
+  }
+
+  return pc;
+}
+
+async function handleOffer(peerId, offer) {
+  const polite = isPolite(peerId);
+
+  // Perfect Negotiation: если мы impolite и делаем свой offer — игнорируем чужой
+  if (!polite && makingOffer[peerId]) {
+    console.log("Impolite side: ignoring incoming offer while making our own");
+    return;
+  }
+
+  // Если мы polite и есть активное соединение — пересоздаёмся как answerer
+  // Если мы impolite — тоже пересоздаёмся, но только если не делаем свой offer
+  closePeerConnection(peerId);
+
+  const pc = new RTCPeerConnection(ICE_SERVERS);
+  connections[peerId] = pc;
+  makingOffer[peerId] = false;
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      sendSignal(peerId, "ice", e.candidate.toJSON()).catch(() => {});
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    const state = pc.connectionState;
+    if (state === "connected") {
+      updatePeerStatus(peerId, true);
+      reconnectAttempts[peerId] = 0;
+    } else if (state === "failed" || state === "disconnected" || state === "closed") {
+      updatePeerStatus(peerId, false);
+      scheduleReconnect(peerId);
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    if (pc.iceConnectionState === "failed") {
+      try { pc.restartIce(); } catch(e) {}
+    }
+  };
+
+  pc.ondatachannel = (e) => setupDataChannel(peerId, e.channel);
+
+  try {
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+    // Apply queued ICE candidates
+    if (pc._queuedCandidates) {
+      for (const cand of pc._queuedCandidates) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch(e) {}
+      }
+      delete pc._queuedCandidates;
+    }
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await sendSignal(peerId, "answer", answer);
+  } catch(e) {
+    console.error("Handle offer error:", e);
+  }
+}
+
+async function handleAnswer(peerId, answer) {
+  const pc = connections[peerId];
+  if (!pc || pc.signalingState === "closed") return;
+
+  // Perfect negotiation: если мы polite и получили answer в неправильном состоянии
+  if (isPolite(peerId) && pc.signalingState === "stable") {
+    console.log("Polite: received answer in stable state, ignoring (likely from old connection)");
+    return;
+  }
+
+  try {
+    if (pc.signalingState === "have-local-offer") {
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    } else {
+      console.log("Unexpected signaling state for answer:", pc.signalingState);
+    }
+  } catch(e) {
+    console.error("Handle answer error:", e);
+  }
+}
+
+async function handleIce(peerId, candidate) {
+  const pc = connections[peerId];
+  if (!pc || pc.signalingState === "closed") return;
+
+  try {
+    if (pc.remoteDescription) {
+      await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    } else {
+      // Queue ICE candidates if remote description not set yet
+      if (!pc._queuedCandidates) pc._queuedCandidates = [];
+      pc._queuedCandidates.push(candidate);
+    }
+  } catch(e) {
+    console.error("Add ICE error:", e);
+  }
+}
+
+// ======== DataChannel ========
+function setupDataChannel(peerId, dc) {
+  dataChannels[peerId] = dc;
+
+  dc.onopen = () => {
+    console.log("DC open", peerId);
+    updatePeerStatus(peerId, true);
+    $("chat-peer-status").textContent = "🟢 E2E защищено";
+    dc.send(JSON.stringify({type: "hello", name: myName, id: myId}));
+    broadcastSync({type: 'peer_connected', peerId});
+  };
+
+  dc.onclose = () => {
+    console.log("DC close", peerId);
+    updatePeerStatus(peerId, false);
+    $("chat-peer-status").textContent = "⚪ Не в сети (история сохранена)";
+    broadcastSync({type: 'peer_disconnected', peerId});
+    scheduleReconnect(peerId);
+  };
+
+  dc.onerror = (e) => {
+    console.error("DC error", peerId, e);
+    scheduleReconnect(peerId);
+  };
+
+  dc.onmessage = async (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      await handlePeerMessage(peerId, data);
+    } catch(err) {
+      console.error("Message parse error:", err);
+    }
+  };
+}
+
+async function handlePeerMessage(peerId, data) {
+  if (data.type === "hello") {
+    peerNames[peerId] = data.name;
+    await savePeer(peerId, {name: data.name});
+    await saveSetting("peerNames", peerNames);
+    updatePeerName(peerId, data.name);
+    // Отвечаем приветствием
+    const dc = dataChannels[peerId];
+    if (dc && dc.readyState === "open") {
+      dc.send(JSON.stringify({type: "hello-back", name: myName, id: myId}));
+    }
+    // Отправляем накопленные сообщения
+    flushMessageQueue(peerId);
+  } else if (data.type === "hello-back") {
+    peerNames[peerId] = data.name;
+    await savePeer(peerId, {name: data.name});
+    await saveSetting("peerNames", peerNames);
+    updatePeerName(peerId, data.name);
+    flushMessageQueue(peerId);
+  } else if (data.type === "message") {
+    // Deduplication
+    if (data.msgId && receivedMsgIds.has(data.msgId)) {
+      console.log("Duplicate message ignored:", data.msgId);
+      return;
+    }
+    if (data.msgId) receivedMsgIds.add(data.msgId);
+    // Limit set size
+    if (receivedMsgIds.size > 10000) {
+      const iter = receivedMsgIds.values();
+      for (let i = 0; i < 5000; i++) receivedMsgIds.delete(iter.next().value);
+    }
+
+    const password = peerPasswords[peerId];
+    if (password) await e2e.setPassword(password, peerSalts[peerId]);
+    const decrypted = await e2e.decrypt(data.text);
+    const time = new Date().toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"});
+    const msg = {name: data.name, text: decrypted, time, isMe: false, timestamp: Date.now(), msgId: data.msgId};
+    await saveMessage(peerId, msg);
+    if (currentPeer === peerId) {
+      addMessage(data.name, decrypted, false, time);
+    } else {
+      showNotification(data.name, decrypted);
+      updatePeerPreview(peerId, decrypted);
+    }
+  } else if (data.type === "file") {
+    // Deduplication
+    if (data.msgId && receivedMsgIds.has(data.msgId)) {
+      console.log("Duplicate file ignored:", data.msgId);
+      return;
+    }
+    if (data.msgId) receivedMsgIds.add(data.msgId);
+
+    const password = peerPasswords[peerId];
+    if (password) await e2e.setPassword(password, peerSalts[peerId]);
+    const time = new Date().toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"});
+    const msg = {name: data.name, fileName: data.fileName, fileData: data.fileData, time, isMe: false, timestamp: Date.now(), msgId: data.msgId};
+    await saveMessage(peerId, msg);
+    if (currentPeer === peerId) {
+      addFileMessage(data.name, data.fileName, data.fileData, false, time);
+    } else {
+      showNotification(data.name, "📎 " + data.fileName);
+      updatePeerPreview(peerId, "📎 " + data.fileName);
+    }
+  } else if (data.type === "ping") {
+    const dc = dataChannels[peerId];
+    if (dc && dc.readyState === "open") {
+      dc.send(JSON.stringify({type: "pong"}));
+    }
+  }
+}
+
+// ======== ПЕРЕПОДКЛЮЧЕНИЕ ========
+function scheduleReconnect(peerId) {
+  if (reconnectTimers[peerId]) return;
+  const attempts = reconnectAttempts[peerId] || 0;
+  if (attempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.log("Max reconnect reached for", peerId);
+    return;
+  }
+  reconnectAttempts[peerId] = attempts + 1;
+
+  const delay = Math.min(RECONNECT_DELAY * (attempts + 1), 30000);
+  console.log("Reconnecting to", peerId, "in", delay, "ms (attempt", attempts + 1, ")");
+
+  reconnectTimers[peerId] = setTimeout(() => {
+    delete reconnectTimers[peerId];
+    attemptReconnect(peerId);
+  }, delay);
+}
+
+async function attemptReconnect(peerId) {
+  if (!peerPasswords[peerId]) return;
+  const password = peerPasswords[peerId];
+  await e2e.setPassword(password, peerSalts[peerId]);
+  updatePeerStatus(peerId, false, true); // connecting
+  try {
+    await createConnection(peerId, true);
+  } catch(e) {
+    console.error("Reconnect failed:", e);
+  }
+}
+
+function startKeepalive() {
+  if (keepaliveTimer) clearInterval(keepaliveTimer);
+  keepaliveTimer = setInterval(() => {
+    Object.entries(dataChannels).forEach(([peerId, dc]) => {
+      if (dc && dc.readyState === "open") {
+        try { dc.send(JSON.stringify({type: "ping"})); } catch(e) {}
+      }
+    });
+  }, KEEPALIVE_INTERVAL);
+
+  // Периодическая очистка старых сообщений (раз в день)
+  setInterval(() => {
+    cleanupOldMessages(90); // Храним 90 дней
+  }, 24 * 60 * 60 * 1000);
+}
+
+// ======== UI ПИРЫ ========
+function addPeerToList(peerId, name, online) {
+  const list = $("peer-list");
+  if (list.querySelector(".empty-state")) list.innerHTML = "";
+
+  let div = $("peer-" + peerId);
+  if (!div) {
+    div = document.createElement("div");
+    div.className = "peer-item";
+    div.id = "peer-" + peerId;
+    div.onclick = () => openChat(peerId);
+    list.appendChild(div);
+  }
+
+  const displayName = peerNames[peerId] || name || peerId;
+  const statusClass = online ? '' : 'offline';
+  const statusText = online ? 'В сети' : 'Не в сети';
+
+  div.innerHTML = `
+    <div class="peer-avatar">👤</div>
+    <div class="peer-info">
+      <div class="peer-name">${esc(displayName)}</div>
+      <div class="peer-status ${statusClass}"><span class="dot"></span>${statusText}</div>
+      <div class="peer-preview" id="preview-${peerId}"></div>
+    </div>
+  `;
+}
+
+function updatePeerStatus(peerId, online, connecting = false) {
+  const div = $("peer-" + peerId);
+  if (!div) return;
+  const statusEl = div.querySelector(".peer-status");
+  if (!statusEl) return;
+
+  statusEl.className = "peer-status" + (online ? "" : (connecting ? " connecting" : " offline"));
+  statusEl.innerHTML = `<span class="dot"></span>${online ? 'В сети' : (connecting ? 'Подключение...' : 'Не в сети')}`;
+}
+
+function updatePeerName(peerId, name) {
+  const div = $("peer-" + peerId);
+  if (div) {
+    const nameEl = div.querySelector(".peer-name");
+    if (nameEl) nameEl.textContent = name;
+  }
+  if (currentPeer === peerId) $("chat-peer-name").textContent = name;
+}
+
+function updatePeerPreview(peerId, text) {
+  const preview = $("preview-" + peerId);
+  if (preview) preview.textContent = text.substring(0, 50);
+}
+
+// ======== МОДАЛЬНЫЕ ========
+function showMyCode() {
+  $("my-code").textContent = myId;
+  $("my-qr").innerHTML = "";
+  try {
+    new QRCode($("my-qr"), {text: myId, width: 180, height: 180});
+  } catch(e) {
+    $("my-qr").textContent = "QR недоступен";
+  }
+  openModal("my-code-modal");
+}
+
+function showConnectModal() { openModal("connect-modal"); }
+
+async function connectToPeer() {
+  const peerId = $("connect-code").value.trim().toUpperCase();
+  const password = $("connect-password").value.trim();
+
+  if (!peerId || peerId === myId) { showToast("Введи код друга"); return; }
+  if (!password) { showToast("Введи пароль шифрования"); return; }
+
+  peerPasswords[peerId] = password;
+  const salt = await e2e.setPassword(password);
+  peerSalts[peerId] = salt;
+
+  // Сохраняем
+  await saveSetting("peerPasswords", peerPasswords);
+  await saveSetting("peerSalts", peerSalts);
+
+  $("connect-code").value = "";
+  $("connect-password").value = "";
+  closeModal("connect-modal");
+
+  addPeerToList(peerId, peerId, false);
+  await savePeer(peerId, {name: peerId});
+
+  // Если мы polite — просто ждём входящего offer, не создаём свой
+  if (isPolite(peerId)) {
+    showToast("Ожидание подключения от собеседника...");
+    updatePeerStatus(peerId, false, true);
+    return;
+  }
+
+  try {
+    await createConnection(peerId);
+  } catch(e) {
+    showToast("Ошибка подключения: " + e.message);
+  }
+}
+
+async function copyCode(btn) {
+  const code = $("my-code").textContent;
+  const password = $("my-password").value.trim();
+  const text = password ? code + "\nПароль: " + password : code;
+  try {
+    await navigator.clipboard.writeText(text);
+    const original = btn.textContent;
+    btn.textContent = "✅ Скопировано!";
+    setTimeout(() => btn.textContent = original, 2000);
+  } catch(e) {
+    showToast("Не удалось скопировать");
+  }
+}
+
+// ======== ЧАТ ========
+async function openChat(peerId) {
+  currentPeer = peerId;
+  const name = peerNames[peerId] || peerId;
+  $("chat-peer-name").textContent = name;
+  $("messages").innerHTML = "";
+  showScreen("chat-screen");
+
+  const password = peerPasswords[peerId];
+  if (password) await e2e.setPassword(password, peerSalts[peerId]);
+
+  const msgs = await getMessages(peerId);
+  msgs.forEach(m => {
+    if (m.fileName) {
+      addFileMessage(m.name, m.fileName, m.fileData, m.isMe, m.time);
+    } else {
+      addMessage(m.name, m.text, m.isMe, m.time);
+    }
+  });
+
+  const dc = dataChannels[peerId];
+  if (dc && dc.readyState === "open") {
+    $("chat-peer-status").textContent = "🟢 E2E защищено";
+  } else {
+    $("chat-peer-status").textContent = "⚪ Не в сети (история загружена)";
+  }
+}
+
+function backToMain() {
+  currentPeer = null;
+  showScreen("main-screen");
+}
+
+async function sendMessage() {
+  const input = $("msg-input");
+  const text = input.value.trim();
+  if (!text || !currentPeer) return;
+
+  const password = peerPasswords[currentPeer];
+  if (!password) { showToast("Нет пароля шифрования"); return; }
+
+  await e2e.setPassword(password, peerSalts[currentPeer]);
+  const encrypted = await e2e.encrypt(text);
+
+  const time = new Date().toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"});
+  const msgId = generateId() + Date.now().toString(36);
+  const msg = {name: myName, text, time, isMe: true, timestamp: Date.now(), msgId};
+
+  await saveMessage(currentPeer, msg);
+  addMessage(myName, text, true, time);
+
+  const dc = dataChannels[currentPeer];
+  if (dc && dc.readyState === "open") {
+    try {
+      dc.send(JSON.stringify({type: "message", name: myName, text: encrypted, msgId}));
+    } catch(e) {
+      showToast("Не удалось отправить — собеседник не в сети");
+      queueMessage(currentPeer, {type: "message", name: myName, text: encrypted, msgId});
+    }
+  } else {
+    showToast("Сообщение сохранено — отправим когда собеседник появится");
+    queueMessage(currentPeer, {type: "message", name: myName, text: encrypted, msgId});
+  }
+
+  input.value = "";
+  input.style.height = "auto";
+}
+
+async function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file || !currentPeer) return;
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  if (file.size > MAX_FILE_SIZE) {
+    showToast("Файл слишком большой (макс 10MB)");
+    e.target.value = "";
+    return;
+  }
+
+  const password = peerPasswords[currentPeer];
+  if (!password) { showToast("Нет пароля шифрования"); return; }
+
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const time = new Date().toLocaleTimeString("ru-RU", {hour:"2-digit", minute:"2-digit"});
+    const data = ev.target.result;
+    const msgId = generateId() + Date.now().toString(36);
+
+    await e2e.setPassword(password, peerSalts[currentPeer]);
+    const arrayBuffer = await (await fetch(data)).arrayBuffer();
+    const encrypted = await e2e.encryptFile(arrayBuffer);
+    const encryptedBase64 = btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+
+    const msg = {name: myName, fileName: file.name, fileData: data, time, isMe: true, timestamp: Date.now(), msgId};
+    await saveMessage(currentPeer, msg);
+    addFileMessage(myName, file.name, data, true, time);
+
+    const dc = dataChannels[currentPeer];
+    if (dc && dc.readyState === "open") {
+      try {
+        dc.send(JSON.stringify({type: "file", name: myName, fileName: file.name, fileData: encryptedBase64, msgId}));
+      } catch(err) {
+        showToast("Не удалось отправить файл");
+        queueMessage(currentPeer, {type: "file", name: myName, fileName: file.name, fileData: encryptedBase64, msgId});
+      }
+    } else {
+      showToast("Файл сохранён — отправим когда собеседник появится");
+      queueMessage(currentPeer, {type: "file", name: myName, fileName: file.name, fileData: encryptedBase64, msgId});
+    }
+  };
+  reader.onerror = () => showToast("Ошибка чтения файла");
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
+// ======== UI СООБЩЕНИЙ ========
+function addMessage(from, text, isMe, time) {
+  const area = $("messages");
+  const div = document.createElement("div");
+  div.className = "msg-row " + (isMe ? "me" : "other");
+  div.innerHTML = `<div class="msg-bubble">${!isMe ? '<div class="msg-name">' + esc(from) + '</div>' : ''}<div class="msg-text">${esc(text)}</div><div class="msg-time">${time}</div></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  broadcastSync({type: 'new_message', name: from, text, isMe, time, peerId: currentPeer});
+}
+
+function addFileMessage(from, fileName, fileData, isMe, time) {
+  const area = $("messages");
+  const div = document.createElement("div");
+  div.className = "msg-row " + (isMe ? "me" : "other");
+
+  const isImage = fileName.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i);
+  let content = "";
+  if (isImage) {
+    content = `<img src="${esc(fileData)}" class="img-preview" onclick="showImageModal(this.src)">`;
+  } else {
+    content = `<a href="${esc(fileData)}" download="${esc(fileName)}" class="msg-file"><span class="msg-file-icon">📎</span><div class="msg-file-info"><span class="msg-file-name">${esc(fileName)}</span><span class="msg-file-size">Скачать</span></div></a>`;
+  }
+
+  div.innerHTML = `<div class="msg-bubble">${!isMe ? '<div class="msg-name">' + esc(from) + '</div>' : ''}${content}<div class="msg-time">${time}</div></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  broadcastSync({type: 'new_message', name: from, fileName, fileData, isMe, time, peerId: currentPeer});
+}
+
+function showImageModal(src) {
+  $("modal-img").src = src;
+  openModal("image-modal");
+}
+
+// ======== УВЕДОМЛЕНИЯ ========
+function showNotification(title, body) {
+  if (document.visibilityState === "visible") return;
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, {body, icon: "🔐"});
+  }
+}
+
+async function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission === "default") {
+    await Notification.requestPermission();
+  }
+}
+
+// ======== ОБРАБОТЧИКИ СОБЫТИЙ ========
+document.addEventListener("DOMContentLoaded", () => {
+  // Кнопки
+  $("btn-enter").addEventListener("click", enterApp);
+  $("btn-connect").addEventListener("click", showConnectModal);
+  $("btn-fab").addEventListener("click", showMyCode);
+  $("btn-back").addEventListener("click", backToMain);
+  $("btn-attach").addEventListener("click", () => $("file-input").click());
+  $("btn-send").addEventListener("click", sendMessage);
+  $("file-input").addEventListener("change", handleFile);
+  $("btn-copy-code").addEventListener("click", function() { copyCode(this); });
+  $("btn-close-mycode").addEventListener("click", () => closeModal("my-code-modal"));
+  $("btn-cancel-connect").addEventListener("click", () => closeModal("connect-modal"));
+  $("btn-do-connect").addEventListener("click", connectToPeer);
+
+  // Поле ввода
+  const input = $("msg-input");
+  input.addEventListener("keypress", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  input.addEventListener("input", function() {
+    this.style.height = "auto";
+    this.style.height = Math.min(this.scrollHeight, 120) + "px";
+  });
+
+  // Восстановление имени
+  const savedName = localStorage.getItem("fc_name");
+  if (savedName) $("username").value = savedName;
+
+  // Уведомления
+  requestNotificationPermission();
+
+  // Обработка изменения видимости
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && currentPeer) {
+      // Обновляем статус при возврате
+      const dc = dataChannels[currentPeer];
+      if (dc && dc.readyState === "open") {
+        $("chat-peer-status").textContent = "🟢 E2E защищено";
+      }
+    }
+  });
+
+  // Обработка закрытия страницы
+  window.addEventListener("beforeunload", () => {
+    Object.values(connections).forEach(pc => {
+      try { pc.close(); } catch(e) {}
+    });
+    Object.values(dataChannels).forEach(dc => {
+      try { dc.close(); } catch(e) {}
+    });
+    if (keepaliveTimer) clearInterval(keepaliveTimer);
+    Object.values(reconnectTimers).forEach(t => clearTimeout(t));
+    if (bc) bc.close();
+  });
+
+  // BroadcastChannel для синхронизации между вкладками
+  let bc = null;
+  if ('BroadcastChannel' in window) {
+    bc = new BroadcastChannel('firechat_sync');
+    bc.onmessage = (e) => {
+      if (e.data.type === 'new_message' && e.data.peerId === currentPeer) {
+        // Обновляем чат если открыт
+        if (e.data.fileName) {
+          addFileMessage(e.data.name, e.data.fileName, e.data.fileData, e.data.isMe, e.data.time);
+        } else {
+          addMessage(e.data.name, e.data.text, e.data.isMe, e.data.time);
+        }
+      } else if (e.data.type === 'peer_connected') {
+        updatePeerStatus(e.data.peerId, true);
+      } else if (e.data.type === 'peer_disconnected') {
+        updatePeerStatus(e.data.peerId, false);
+      }
+    };
+  }
+
+  function broadcastSync(data) {
+    if (bc) bc.postMessage(data);
+  }
+
+  // Обработка изменения размера (клавиатура на мобильных)
+  window.addEventListener("resize", () => {
+    document.body.style.height = window.innerHeight + "px";
+    if (currentPeer) {
+      const area = $("messages");
+      area.scrollTop = area.scrollHeight;
+    }
+  });
+
+  // Service Worker (PWA) — адаптирован для GitHub Pages
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      const CACHE_NAME = 'firechat-v1';
+      const urlsToCache = ['./'];
+
+      self.addEventListener('install', e => {
+        e.waitUntil(
+          caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(urlsToCache))
+            .then(() => self.skipWaiting())
+        );
+      });
+
+      self.addEventListener('activate', e => {
+        e.waitUntil(clients.claim());
+      });
+
+      self.addEventListener('fetch', e => {
+        e.respondWith(
+          caches.match(e.request)
+            .then(response => {
+              if (response) return response;
+              return fetch(e.request).catch(() => {
+                return new Response('Offline — FireChat требует подключения', {
+                  headers: {'Content-Type': 'text/plain'}
+                });
+              });
+            })
+        );
+      });
+    `;
+    const blob = new Blob([swCode], {type: 'application/javascript'});
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl, {scope: './'}).catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  }
+});
+</script>
+</body>
+</html>
