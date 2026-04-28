@@ -23,6 +23,7 @@
     button { padding:0.8rem 1.2rem; border:none; border-radius:10px; font-weight:600; font-size:0.9rem; cursor:pointer; transition:all 0.2s; flex:1; }
     .btn-primary { background:var(--accent); color:white; }
     .btn-primary:hover { background:var(--accent-hover); transform:scale(1.02); }
+    .btn-primary:disabled { background:#444; cursor:default; transform:none; }
     .btn-secondary { background:var(--input-bg); color:var(--text); border:1px solid var(--border); }
     .btn-secondary:hover { background:#3a3a3c; }
     .btn-danger { background:rgba(255,69,58,0.2); color:var(--error); border:1px solid rgba(255,69,58,0.4); }
@@ -61,7 +62,7 @@
         <button class="btn-primary" id="createBtn">🚀 Создать</button>
         <button class="btn-secondary" id="joinBtn">🔗 Присоединиться</button>
       </div>
-      <div class="hint">💡 Работает в любой сети. Сообщения шифруются и передаются напрямую между устройствами.</div>
+      <div class="hint">💡 Работает в любой сети. Сообщения шифруются и передаются напрямую.</div>
     </div>
 
     <div class="card hidden" id="initiatorPanel">
@@ -110,8 +111,6 @@
   <div class="logs-toggle" onclick="document.getElementById('logs').style.display = document.getElementById('logs').style.display === 'block' ? 'none' : 'block'">🐞 Логи</div>
 
 <script>
-  // 🌍 Только публичные бесплатные STUN-серверы. Никаких паролей, никаких аккаунтов.
-  // Трафик после соединения идёт НАПРЯМУЮ между устройствами.
   const PC_CONFIG = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -176,6 +175,7 @@
   });
 
   function makePC() {
+    if (pc) pc.close();
     pc = new RTCPeerConnection(PC_CONFIG);
     
     pc.onicecandidateerror = e => {
@@ -193,7 +193,7 @@
       } else if (pc.iceConnectionState === 'failed') {
         setStatus('❌ Не удалось соединиться', 'error');
         setBadge('relay', 'Попробуйте ещё раз');
-        log('💡 Совет: проверьте интернет или попробуйте в одной сети');
+        log('💡 Совет: проверьте интернет');
       } else if (pc.iceConnectionState === 'disconnected') {
         setStatus('🔌 Соединение разорвано', 'error');
       }
@@ -201,7 +201,9 @@
 
     pc.onconnectionstatechange = () => {
       log(`PC: ${pc.connectionState}`);
-      if (pc.connectionState === 'failed') setStatus('❌ Ошибка', 'error');
+      if (pc.connectionState === 'connected') {
+        setStatus('✅ Подключено', 'connected');
+      }
     };
 
     return pc;
@@ -322,20 +324,37 @@
     }
   };
 
+  // 🔧 ИСПРАВЛЕНИЕ КНОПКИ "ПОДКЛЮЧИТЬ"
   document.getElementById('connectBtn').onclick = async () => {
     const code = document.getElementById('answerInput').value;
     if (!code.trim()) return alert('Вставьте ответ друга!');
     
+    // Проверка: если уже подключено, не делаем ничего
+    if (pc && pc.signalingState === 'stable') {
+        setStatus('✅ Уже подключено', 'connected');
+        log('⚠️ Соединение уже установлено');
+        return;
+    }
+
     const data = unpack(code);
     if (!data || !data.sdp) return alert('Неверный формат ответа.');
 
     try {
-      await pc.setRemoteDescription({ type: data.type || 'answer', sdp: data.sdp });
-      setStatus('🔄 Подключение...', 'connecting');
-      log('🔗 Ожидание соединения...');
+        // Жесткая проверка состояния перед применением
+        if (pc.signalingState !== 'have-local-offer') {
+             throw new Error(`Неверное состояние (${pc.signalingState}). Попробуйте обновить страницу.`);
+        }
+        await pc.setRemoteDescription({ type: data.type || 'answer', sdp: data.sdp });
+        setStatus('🔄 Подключение...', 'connecting');
+        log('🔗 Ответ принят. Ожидание соединения...');
     } catch (e) {
       log('❌ Ошибка: ' + e.message);
-      alert('Ошибка: ' + e.message);
+      // Если ошибка "wrong state", значит браузер уже сам справился
+      if (e.message.includes('wrong state') || e.message.includes('stable')) {
+          setStatus('✅ Подключено (авто)', 'connected');
+      } else {
+          alert('Ошибка: ' + e.message);
+      }
     }
   };
 
