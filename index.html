@@ -30,7 +30,8 @@
     .btn-danger:hover { background:rgba(255,69,58,0.3); }
     .hidden { display:none !important; }
     #messages { height:240px; overflow-y:auto; padding:0.8rem; background:var(--bg); border-radius:12px; margin-bottom:0.8rem; display:flex; flex-direction:column; gap:0.6rem; border:1px solid var(--border); }
-    .msg { max-width:80%; padding:0.6rem 0.9rem; border-radius:14px; word-break:break-word; line-height:1.4; }
+    .msg { max-width:80%; padding:0.6rem 0.9rem; border-radius:14px; word-break:break-word; line-height:1.4; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
     .msg.me { align-self:flex-end; background:var(--accent); color:white; }
     .msg.other { align-self:flex-start; background:var(--input-bg); border:1px solid var(--border); }
     .msg .time { font-size:0.65rem; opacity:0.7; margin-bottom:0.2rem; }
@@ -48,11 +49,13 @@
     .badge.p2p { background:rgba(48,209,88,0.2); color:var(--success); }
     .badge.relay { background:rgba(255,69,58,0.2); color:var(--error); }
     .hint { font-size:0.8rem; color:var(--muted); margin-top:0.3rem; }
+    .reconnect-banner { background: var(--warning); color: #000; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; text-align: center; font-weight: bold; display:none; }
   </style>
 </head>
 <body>
   <div class="container">
     <div id="status" class="status">🔌 Не подключено</div>
+    <div id="reconnectBanner" class="reconnect-banner">⚠️ Связь потеряна. Обменяйтесь кодами заново, чат сохранится.</div>
 
     <div class="card" id="startPanel">
       <h2>🔐 FireChat P2P</h2>
@@ -62,7 +65,7 @@
         <button class="btn-primary" id="createBtn">🚀 Создать</button>
         <button class="btn-secondary" id="joinBtn">🔗 Присоединиться</button>
       </div>
-      <div class="hint">💡 Работает в любой сети. Сообщения шифруются и передаются напрямую.</div>
+      <div class="hint">💡 Работает в любой сети. История сохраняется локально.</div>
     </div>
 
     <div class="card hidden" id="initiatorPanel">
@@ -104,46 +107,31 @@
         <div class="progress-wrap hidden" id="fileProgressWrap"><div class="progress-bar" id="fileProgressBar"></div></div>
         <div class="file-status" id="fileStatus"></div>
       </div>
+      <button class="btn-danger" style="margin-top:1rem; width:100%;" onclick="if(confirm('Очистить историю и выйти?')){localStorage.removeItem('firechat_history'); location.reload();}">🗑 Сбросить и выйти</button>
     </div>
 
     <pre id="logs"></pre>
   </div>
   <div class="logs-toggle" onclick="document.getElementById('logs').style.display = document.getElementById('logs').style.display === 'block' ? 'none' : 'block'">🐞 Логи</div>
 
-// 🌍 Надёжные публичные STUN/TURN сервера
-const PC_CONFIG = {
-  iceServers: [
-    // Google STUN (основные)
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.google.com:19302' },
-    { urls: 'stun:stun3.google.com:19302' },
-    { urls: 'stun:stun4.google.com:19302' },
-    
-    // Cloudflare STUN (резерв)
-    { urls: 'stun:stun.cloudflare.com:3478' },
-    
-    // Публичные TURN (для сложных сетей)
-    { 
-      urls: 'turn:openrelay.metered.ca:80', 
-      username: 'openrelayproject', 
-      credential: 'openrelayproject' 
-    },
-    { 
-      urls: 'turn:openrelay.metered.ca:443', 
-      username: 'openrelayproject', 
-      credential: 'openrelayproject' 
-    },
-    { 
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp', 
-      username: 'openrelayproject', 
-      credential: 'openrelayproject' 
-    }
-  ],
-  iceTransportPolicy: 'all',
-  bundlePolicy: 'max-bundle',
-  rtcpMuxPolicy: 'require'
-};
+<script>
+  // 🌍 ОБНОВЛЁННАЯ КОНФИГУРАЦИЯ СЕРВЕРОВ
+  const PC_CONFIG = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.google.com:19302' },
+      { urls: 'stun:stun3.google.com:19302' },
+      { urls: 'stun:stun4.google.com:19302' },
+      { urls: 'stun:stun.cloudflare.com:3478' },
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    ],
+    iceTransportPolicy: 'all',
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require'
+  };
 
   let pc, dc, myName, role = 'none', iceTimeout;
 
@@ -170,6 +158,16 @@ const PC_CONFIG = {
   const show = id => document.getElementById(id).classList.remove('hidden');
   const hide = id => document.getElementById(id).classList.add('hidden');
 
+  // 💾 Сохранение и загрузка чата
+  function saveHistory() {
+    localStorage.setItem('firechat_history', document.getElementById('messages').innerHTML);
+  }
+  
+  function loadHistory() {
+    const h = localStorage.getItem('firechat_history');
+    if (h) document.getElementById('messages').innerHTML = h;
+  }
+
   const pack = d => btoa(JSON.stringify(d));
   
   const unpack = s => {
@@ -179,17 +177,14 @@ const PC_CONFIG = {
       clean = clean.replace(/-/g, '+').replace(/_/g, '/');
       while (clean.length % 4) clean += '=';
       return JSON.parse(atob(clean));
-    } catch (e) {
-      log(`❌ Ошибка парсинга: ${e.message}`);
-      return null;
-    }
+    } catch { return null; }
   };
 
   const waitIce = pc => new Promise(resolve => {
     if (pc.iceGatheringState === 'complete') return resolve();
     const onState = () => { if (pc.iceGatheringState === 'complete') { cleanup(); resolve(); } };
     pc.onicegatheringstatechange = onState;
-    iceTimeout = setTimeout(() => { cleanup(); log('⏱ Продолжаем с имеющимися кандидатами'); resolve(); }, 20000);
+    iceTimeout = setTimeout(() => { cleanup(); resolve(); }, 15000);
     const cleanup = () => { pc.onicegatheringstatechange = null; clearTimeout(iceTimeout); };
   });
 
@@ -197,34 +192,21 @@ const PC_CONFIG = {
     if (pc) pc.close();
     pc = new RTCPeerConnection(PC_CONFIG);
     
-    pc.onicecandidateerror = e => {
-      if (e.errorText && !e.errorText.includes('timeout')) {
-        log(`⚠️ ICE: ${e.errorText}`);
-      }
-    };
-
     pc.oniceconnectionstatechange = () => {
       log(`ICE: ${pc.iceConnectionState}`);
       if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         setStatus('✅ Подключено', 'connected');
-        clearTimeout(iceTimeout);
+        hide('reconnectBanner');
         checkConnectionType();
-      } else if (pc.iceConnectionState === 'failed') {
-        setStatus('❌ Не удалось соединиться', 'error');
-        setBadge('relay', 'Попробуйте ещё раз');
-        log('💡 Совет: проверьте интернет');
-      } else if (pc.iceConnectionState === 'disconnected') {
-        setStatus('🔌 Соединение разорвано', 'error');
+      } else if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+        setStatus('🔌 Связь потеряна', 'error');
+        show('reconnectBanner');
+        saveHistory();
+        log('⚠️ Соединение разорвано. Чат сохранён.');
       }
     };
 
-    pc.onconnectionstatechange = () => {
-      log(`PC: ${pc.connectionState}`);
-      if (pc.connectionState === 'connected') {
-        setStatus('✅ Подключено', 'connected');
-      }
-    };
-
+    pc.onconnectionstatechange = () => log(`PC: ${pc.connectionState}`);
     return pc;
   }
 
@@ -238,24 +220,28 @@ const PC_CONFIG = {
             const local = stats.get(pair.localCandidateId);
             if (local) {
               if (local.candidateType === 'host' || local.candidateType === 'srflx') {
-                setBadge('p2p', '🌐 Прямое P2P');
-                log('✅ Трафик идёт НАПРЯМУЮ');
-              } else if (local.candidateType === 'relay') {
-                setBadge('relay', '🔄 Через TURN');
-                log('⚠️ Трафик через ретранслятор');
+                setBadge('p2p', '🌐 Прямое P2P'); log('✅ Трафик НАПРЯМУЮ');
+              } else {
+                setBadge('relay', '🔄 Ретрансляция'); log('⚠️ Через TURN');
               }
               return;
             }
           }
         }
       }
-    } catch (e) { log('Stats: ' + e.message); }
+    } catch {}
   }
 
   function setupDC() {
     dc.onopen = () => {
       log('💬 DataChannel открыт');
-      addMsg('🤖 FireChat', 'Подключено. Шифрование: DTLS AES-GCM', false);
+      setStatus('✅ Подключено', 'connected');
+      hide('startPanel'); hide('initiatorPanel'); hide('joinerPanel');
+      show('chatPanel');
+      hide('reconnectBanner');
+      if (!document.querySelector('.msg.system')) {
+        addMsg('🤖 Система', 'Канал связи установлен. Шифрование активно.', false, true);
+      }
     };
     dc.onmessage = e => {
       const raw = e.data;
@@ -265,71 +251,55 @@ const PC_CONFIG = {
         if (msg.type === 'text') addMsg(msg.user, msg.text, false);
         else if (msg.type === 'file_meta') initFileReceive(msg);
         else if (msg.type === 'file_end') finalizeFileReceive();
-      } catch (err) { log('Msg error: ' + err.message); }
+      } catch {}
     };
     dc.onclose = () => {
-      setStatus('🔌 Отключено', '');
-      hide('chatPanel');
-      show('startPanel');
-      log('🔁 Сессия завершена');
+      log('🔌 Канал закрыт');
+      setStatus('🔌 Отключено', 'error');
+      show('reconnectBanner');
+      saveHistory();
     };
-    dc.onerror = err => log('DC error: ' + (err.message || err));
   }
 
   function copyText(elId) {
     const el = document.getElementById(elId);
-    el.select();
-    el.setSelectionRange(0, 99999);
-    try {
-      navigator.clipboard.writeText(el.value).then(() => log('✅ Скопировано'));
-    } catch {
-      document.execCommand('copy');
-      log('✅ Скопировано');
-    }
+    el.select(); el.setSelectionRange(0, 99999);
+    try { navigator.clipboard.writeText(el.value).then(() => log('✅ Скопировано')); } 
+    catch { document.execCommand('copy'); }
   }
 
   document.getElementById('createBtn').onclick = async () => {
     myName = document.getElementById('username').value.trim() || 'Аноним';
     role = 'initiator';
-    hide('startPanel');
-    show('initiatorPanel');
-    setStatus('⏳ Подготовка...', 'connecting');
-
+    hide('startPanel'); show('initiatorPanel');
+    setStatus('⏳ Генерация...', 'connecting');
+    loadHistory();
     makePC();
     dc = pc.createDataChannel('chat', { ordered: true });
     setupDC();
-
     try {
       await pc.setLocalDescription(await pc.createOffer());
       await waitIce(pc);
       document.getElementById('offerOutput').value = pack({ type: 'offer', sdp: pc.localDescription?.sdp });
       log('📤 Код создан');
-    } catch (e) {
-      log('❌ Ошибка: ' + e.message);
-      setStatus('❌ Ошибка', 'error');
-    }
+    } catch (e) { log('❌ ' + e.message); }
   };
 
   document.getElementById('joinBtn').onclick = () => {
     myName = document.getElementById('username').value.trim() || 'Аноним';
     role = 'joiner';
-    hide('startPanel');
-    show('joinerPanel');
-    setStatus('🔗 Ожидание кода...', 'connecting');
+    hide('startPanel'); show('joinerPanel');
+    setStatus('🔗 Ожидание...', 'connecting');
+    loadHistory();
   };
 
   document.getElementById('generateAnswer').onclick = async () => {
     const code = document.getElementById('offerInput').value;
-    if (!code.trim()) return alert('Вставьте код комнаты!');
-
+    if (!code.trim()) return alert('Вставьте код!');
     makePC();
     pc.ondatachannel = e => { dc = e.channel; setupDC(); };
-
     const data = unpack(code);
-    if (!data || data.type !== 'offer' || !data.sdp) {
-      return alert('Неверный формат кода. Скопируйте полностью.');
-    }
-
+    if (!data || data.type !== 'offer') return alert('Ошибка формата');
     try {
       await pc.setRemoteDescription({ type: 'offer', sdp: data.sdp });
       const ans = await pc.createAnswer();
@@ -337,50 +307,44 @@ const PC_CONFIG = {
       await waitIce(pc);
       document.getElementById('answerOutput').value = pack({ type: 'answer', sdp: pc.localDescription?.sdp });
       log('📤 Ответ создан');
-    } catch (e) {
-      log('❌ Ошибка: ' + e.message);
-      alert('Ошибка: ' + e.message);
-    }
+    } catch (e) { log('❌ ' + e.message); alert('Ошибка'); }
   };
 
-  // 🔧 ИСПРАВЛЕНИЕ КНОПКИ "ПОДКЛЮЧИТЬ"
+  // 🔧 ИСПРАВЛЕННАЯ ЛОГИКА КНОПКИ "ПОДКЛЮЧИТЬ"
   document.getElementById('connectBtn').onclick = async () => {
     const code = document.getElementById('answerInput').value;
-    if (!code.trim()) return alert('Вставьте ответ друга!');
+    if (!code.trim()) return alert('Вставьте ответ!');
     
-    // Проверка: если уже подключено, не делаем ничего
-    if (pc && pc.signalingState === 'stable') {
-        setStatus('✅ Уже подключено', 'connected');
-        log('⚠️ Соединение уже установлено');
-        return;
+    if (pc && dc && dc.readyState === 'open') {
+      hide('startPanel'); hide('initiatorPanel'); show('chatPanel');
+      return;
     }
 
     const data = unpack(code);
-    if (!data || !data.sdp) return alert('Неверный формат ответа.');
+    if (!data || !data.sdp) return alert('Ошибка формата');
 
     try {
-        // Жесткая проверка состояния перед применением
-        if (pc.signalingState !== 'have-local-offer') {
-             throw new Error(`Неверное состояние (${pc.signalingState}). Попробуйте обновить страницу.`);
-        }
+      if (pc.signalingState === 'stable') {
+        makePC(); dc = pc.createDataChannel('chat', { ordered: true }); setupDC();
+      }
+      if (pc.signalingState === 'have-local-offer') {
         await pc.setRemoteDescription({ type: data.type || 'answer', sdp: data.sdp });
         setStatus('🔄 Подключение...', 'connecting');
-        log('🔗 Ответ принят. Ожидание соединения...');
+        log('🔗 Ответ принят');
+      }
     } catch (e) {
-      log('❌ Ошибка: ' + e.message);
-      // Если ошибка "wrong state", значит браузер уже сам справился
-      if (e.message.includes('wrong state') || e.message.includes('stable')) {
-          setStatus('✅ Подключено (авто)', 'connected');
-      } else {
-          alert('Ошибка: ' + e.message);
+      log('❌ ' + e.message);
+      if (e.message.includes('stable')) {
+        hide('startPanel'); hide('initiatorPanel'); show('chatPanel');
+        setStatus('✅ Подключено', 'connected');
       }
     }
   };
 
   document.getElementById('copyOffer').onclick = () => copyText('offerOutput');
   document.getElementById('copyAnswer').onclick = () => copyText('answerOutput');
-  document.getElementById('cancelBtn1').onclick = () => location.reload();
-  document.getElementById('cancelBtn2').onclick = () => location.reload();
+  document.getElementById('cancelBtn1').onclick = () => { localStorage.removeItem('firechat_history'); location.reload(); };
+  document.getElementById('cancelBtn2').onclick = () => { localStorage.removeItem('firechat_history'); location.reload(); };
 
   document.getElementById('sendBtn').onclick = () => {
     const inp = document.getElementById('msgInput');
@@ -389,87 +353,61 @@ const PC_CONFIG = {
     dc.send(JSON.stringify({ type: 'text', user: myName, text: txt }));
     addMsg(myName, txt, true);
     inp.value = '';
-    inp.focus();
+    saveHistory();
   };
 
   document.getElementById('msgInput').addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('sendBtn').click(); }
   });
 
-  function addMsg(user, text, me) {
+  function addMsg(user, text, me, isSys=false) {
     const div = document.createElement('div');
-    div.className = `msg ${me ? 'me' : 'other'}`;
+    div.className = `msg ${me ? 'me' : 'other'} ${isSys ? 'system' : ''}`;
     div.innerHTML = `<div class="time">${user}</div>${text.replace(/</g, '&lt;')}`;
     document.getElementById('messages').appendChild(div);
     document.getElementById('messages').scrollTop = 9999;
+    saveHistory();
   }
 
-  const CHUNK = 16384;
-  let fileRx = { id: '', name: '', size: 0, chunks: [], received: 0 };
-
+  const CHUNK = 16384; let fileRx = { id: '', name: '', size: 0, chunks: [], received: 0 };
   document.getElementById('fileInput').onchange = async e => {
     const file = e.target.files[0];
     if (!file || !dc || dc.readyState !== 'open') return;
-
     const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
     dc.send(JSON.stringify({ type: 'file_meta', id, name: file.name, size: file.size }));
-    log(`📤 Файл: ${file.name}`);
-
-    show('fileProgressWrap');
-    document.getElementById('fileStatus').textContent = 'Отправка...';
-
-    const reader = file.stream().getReader();
-    let idx = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      while (dc.bufferedAmount > 100000) await new Promise(r => setTimeout(r, 50));
-      dc.send(value);
-      idx++;
-      const pct = Math.min(100, Math.round((idx * CHUNK / file.size) * 100));
-      document.getElementById('fileProgressBar').style.width = pct + '%';
-      document.getElementById('fileStatus').textContent = `${pct}%`;
+    show('fileProgressWrap'); document.getElementById('fileStatus').textContent = 'Отправка...';
+    const reader = file.stream().getReader(); let idx = 0;
+    while (true) { 
+      const { done, value } = await reader.read(); if (done) break; 
+      while (dc.bufferedAmount > 100000) await new Promise(r => setTimeout(r, 50)); 
+      dc.send(value); idx++; 
+      document.getElementById('fileProgressBar').style.width = Math.min(100, Math.round((idx*CHUNK/file.size)*100))+'%'; 
     }
-    dc.send(JSON.stringify({ type: 'file_end', id }));
-    setTimeout(() => { hide('fileProgressWrap'); document.getElementById('fileStatus').textContent = '✅ Отправлено'; }, 600);
+    dc.send(JSON.stringify({ type: 'file_end', id })); 
+    setTimeout(() => { hide('fileProgressWrap'); document.getElementById('fileStatus').textContent = '✅'; }, 600); 
     e.target.value = '';
   };
 
-  function handleFileChunk(buf) {
-    if (!fileRx.id) return;
-    fileRx.chunks.push(new Uint8Array(buf));
-    fileRx.received += buf.byteLength;
-    const pct = Math.round((fileRx.received / fileRx.size) * 100);
-    document.getElementById('fileProgressBar').style.width = pct + '%';
-    document.getElementById('fileStatus').textContent = `Получение: ${pct}%`;
+  function handleFileChunk(buf) { 
+    if (!fileRx.id) return; 
+    fileRx.chunks.push(new Uint8Array(buf)); 
+    fileRx.received += buf.byteLength; 
+    document.getElementById('fileProgressBar').style.width = Math.round((fileRx.received/fileRx.size)*100)+'%'; 
   }
-
-  function initFileReceive(meta) {
-    fileRx = { id: meta.id, name: meta.name, size: meta.size, chunks: [], received: 0 };
-    show('fileProgressWrap');
-    document.getElementById('fileProgressBar').style.width = '0%';
-    document.getElementById('fileStatus').textContent = `Получение: ${meta.name}`;
-    addMsg('📥', `Загрузка ${meta.name}...`, false);
+  function initFileReceive(meta) { 
+    fileRx = { id: meta.id, name: meta.name, size: meta.size, chunks: [], received: 0 }; 
+    show('fileProgressWrap'); document.getElementById('fileProgressBar').style.width = '0%'; 
+    document.getElementById('fileStatus').textContent = `Получение: ${meta.name}`; 
   }
-
-  function finalizeFileReceive() {
-    try {
-      const blob = new Blob(fileRx.chunks);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = fileRx.name;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      hide('fileProgressWrap');
-      addMsg('📥', `✅ <a href="${url}" download="${fileRx.name}" style="color:var(--accent)">${fileRx.name}</a>`, false);
-      log(`✅ Файл сохранён`);
-    } catch (e) {
-      log('❌ Ошибка файла: ' + e.message);
-      document.getElementById('fileStatus').textContent = '❌ Ошибка';
-    }
-    fileRx = { id: '', name: '', size: 0, chunks: [], received: 0 };
+  function finalizeFileReceive() { 
+    const blob = new Blob(fileRx.chunks); 
+    const url = URL.createObjectURL(blob); 
+    const a = document.createElement('a'); a.href = url; a.download = fileRx.name; 
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); 
+    hide('fileProgressWrap'); 
+    addMsg('📥', `✅ <a href="${url}" download="${fileRx.name}" style="color:var(--accent)">${fileRx.name}</a>`, false); 
+    fileRx = { id: '', name: '', size: 0, chunks: [], received: 0 }; 
   }
-
-  window.addEventListener('beforeunload', () => { if (pc) pc.close(); });
 </script>
 </body>
 </html>
