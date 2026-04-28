@@ -5,58 +5,105 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🔐 FireChat P2P</title>
   <style>
-    :root { --bg:#0f0f0f; --card:#1a1a1a; --text:#f5f5f7; --muted:#8e8e93; --accent:#0a84ff; --accent-hover:#0070e0; --success:#30d158; --error:#ff453a; --warning:#ffd60a; --input-bg:#2c2c2e; --border:#3a3a3c; }
-    * { box-sizing:border-box; margin:0; padding:0; }
-    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); margin:0; padding:1rem; display:flex; justify-content:center; min-height:100vh; }
-    .container { width:100%; max-width:600px; padding-bottom:4rem; }
-    .status { padding:0.8rem; border-radius:10px; text-align:center; font-weight:600; font-size:1rem; margin-bottom:1rem; background:var(--input-bg); border:1px solid var(--border); color:var(--muted); transition:all 0.3s; }
-    .status.connecting { background:#3a3a3c; color:var(--warning); border-color:#5a5a5c; }
-    .status.connected { background:rgba(48,209,88,0.15); color:var(--success); border-color:var(--success); }
-    .status.error { background:rgba(255,69,58,0.15); color:var(--error); border-color:var(--error); }
-    .card { background:var(--card); padding:1.5rem; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,0.4); margin-bottom:1rem; border:1px solid var(--border); }
-    h2 { margin:0 0 1.2rem; font-size:1.3rem; color:var(--text); }
-    label { display:block; font-size:0.85rem; color:var(--muted); margin-bottom:0.4rem; }
-    input, textarea { width:100%; padding:0.9rem; margin:0.5rem 0 1rem; border:1px solid var(--border); border-radius:10px; font-size:0.95rem; background:var(--input-bg); color:var(--text); transition:border-color 0.2s; }
-    input:focus, textarea:focus { outline:none; border-color:var(--accent); }
-    textarea { font-family:'SF Mono','Consolas',monospace; font-size:0.75rem; min-height:100px; resize:vertical; line-height:1.4; }
-    .btn-row { display:flex; gap:0.6rem; margin-top:0.5rem; }
-    button { padding:0.8rem 1.2rem; border:none; border-radius:10px; font-weight:600; font-size:0.9rem; cursor:pointer; transition:all 0.2s; flex:1; }
-    .btn-primary { background:var(--accent); color:white; }
-    .btn-primary:hover { background:var(--accent-hover); transform:scale(1.02); }
-    .btn-primary:disabled { background:#444; cursor:default; transform:none; }
-    .btn-secondary { background:var(--input-bg); color:var(--text); border:1px solid var(--border); }
-    .btn-secondary:hover { background:#3a3a3c; }
-    .btn-danger { background:rgba(255,69,58,0.2); color:var(--error); border:1px solid rgba(255,69,58,0.4); }
-    .btn-danger:hover { background:rgba(255,69,58,0.3); }
-    .hidden { display:none !important; }
-    #messages { height:240px; overflow-y:auto; padding:0.8rem; background:var(--bg); border-radius:12px; margin-bottom:0.8rem; display:flex; flex-direction:column; gap:0.6rem; border:1px solid var(--border); }
-    .msg { max-width:80%; padding:0.6rem 0.9rem; border-radius:14px; word-break:break-word; line-height:1.4; animation: fadeIn 0.3s; }
-    @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-    .msg.me { align-self:flex-end; background:var(--accent); color:white; }
-    .msg.other { align-self:flex-start; background:var(--input-bg); border:1px solid var(--border); }
-    .msg .time { font-size:0.65rem; opacity:0.7; margin-bottom:0.2rem; }
-    .chat-row { display:flex; gap:0.5rem; margin-bottom:1rem; }
-    .chat-row input { flex:1; margin:0; }
-    .chat-row button { flex:0 0 auto; width:48px; padding:0; font-size:1.2rem; }
-    .file-area { padding:1rem; background:var(--input-bg); border-radius:12px; text-align:center; border:1px dashed var(--border); }
-    .file-area button { flex:none; }
-    .progress-wrap { height:6px; background:#2c2c2e; border-radius:3px; margin-top:0.6rem; overflow:hidden; }
-    .progress-bar { height:100%; background:var(--accent); width:0%; transition:width 0.2s; }
-    .file-status { font-size:0.8rem; color:var(--muted); margin-top:0.4rem; }
-    .logs-toggle { position:fixed; bottom:1rem; right:1rem; background:rgba(30,30,30,0.9); color:var(--muted); padding:0.5rem 0.8rem; border-radius:8px; cursor:pointer; font-size:0.8rem; border:1px solid var(--border); backdrop-filter:blur(8px); z-index:100; }
-    pre#logs { background:#050505; color:var(--muted); padding:1rem; border-radius:12px; font-size:0.7rem; overflow:auto; max-height:180px; margin-top:0; display:none; font-family:'SF Mono',monospace; border:1px solid var(--border); }
-    .badge { display:inline-block; padding:0.3rem 0.6rem; border-radius:6px; font-size:0.75rem; font-weight:600; margin-top:0.5rem; }
-    .badge.p2p { background:rgba(48,209,88,0.2); color:var(--success); }
-    .badge.relay { background:rgba(255,69,58,0.2); color:var(--error); }
-    .hint { font-size:0.8rem; color:var(--muted); margin-top:0.3rem; }
-    .reconnect-banner { background: var(--warning); color: #000; padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; text-align: center; font-weight: bold; display:none; }
+    :root {
+      --bg: #0f0f0f; --card: #1a1a1a; --text: #f5f5f7; --muted: #8e8e93;
+      --accent: #0a84ff; --accent-hover: #0070e0; --success: #30d158;
+      --error: #ff453a; --warning: #ffd60a; --input-bg: #2c2c2e; --border: #3a3a3c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text); margin: 0; padding: 1rem;
+      display: flex; justify-content: center; min-height: 100vh;
+    }
+    .container { width: 100%; max-width: 600px; padding-bottom: 4rem; }
+    
+    /* Status Bar */
+    .status {
+      padding: 0.8rem; border-radius: 10px; text-align: center; font-weight: 600;
+      font-size: 1rem; margin-bottom: 1rem; background: var(--input-bg);
+      border: 1px solid var(--border); color: var(--muted); transition: 0.3s;
+    }
+    .status.connecting { background: #3a3a3c; color: var(--warning); border-color: #5a5a5c; }
+    .status.connected { background: rgba(48,209,88,0.15); color: var(--success); border-color: var(--success); }
+    .status.error { background: rgba(255,69,58,0.15); color: var(--error); border-color: var(--error); }
+
+    /* Cards */
+    .card {
+      background: var(--card); padding: 1.5rem; border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4); margin-bottom: 1rem; border: 1px solid var(--border);
+    }
+    h2 { margin: 0 0 1.2rem; font-size: 1.3rem; color: var(--text); }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; }
+    
+    /* Inputs */
+    input, textarea {
+      width: 100%; padding: 0.9rem; margin: 0.5rem 0 1rem;
+      border: 1px solid var(--border); border-radius: 10px;
+      font-size: 0.95rem; background: var(--input-bg); color: var(--text);
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    textarea {
+      font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.75rem;
+      min-height: 100px; resize: vertical; line-height: 1.4;
+    }
+
+    /* Buttons */
+    .btn-row { display: flex; gap: 0.6rem; margin-top: 0.5rem; }
+    button {
+      padding: 0.8rem 1.2rem; border: none; border-radius: 10px;
+      font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: 0.2s; flex: 1;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); transform: scale(1.02); }
+    .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #3a3a3c; }
+    .btn-danger { background: rgba(255,69,58,0.2); color: var(--error); border: 1px solid rgba(255,69,58,0.4); }
+    .btn-danger:hover { background: rgba(255,69,58,0.3); }
+
+    /* Chat Area */
+    .hidden { display: none !important; }
+    #messages {
+      height: 240px; overflow-y: auto; padding: 0.8rem; background: var(--bg);
+      border-radius: 12px; margin-bottom: 0.8rem; display: flex; flex-direction: column;
+      gap: 0.6rem; border: 1px solid var(--border);
+    }
+    .msg { max-width: 80%; padding: 0.6rem 0.9rem; border-radius: 14px; word-break: break-word; line-height: 1.4; }
+    .msg.me { align-self: flex-end; background: var(--accent); color: white; }
+    .msg.other { align-self: flex-start; background: var(--input-bg); border: 1px solid var(--border); }
+    .msg .time { font-size: 0.65rem; opacity: 0.7; margin-bottom: 0.2rem; }
+
+    /* File Upload */
+    .file-area { padding: 1rem; background: var(--input-bg); border-radius: 12px; text-align: center; border: 1px dashed var(--border); }
+    .file-area button { flex: none; }
+    .progress-wrap { height: 6px; background: #2c2c2e; border-radius: 3px; margin-top: 0.6rem; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; }
+    .file-status { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+
+    /* Logs & Utilities */
+    .logs-toggle {
+      position: fixed; bottom: 1rem; right: 1rem; background: rgba(30,30,30,0.9);
+      color: var(--muted); padding: 0.5rem 0.8rem; border-radius: 8px; cursor: pointer;
+      font-size: 0.8rem; border: 1px solid var(--border); backdrop-filter: blur(8px); z-index: 100;
+    }
+    pre#logs {
+      background: #050505; color: var(--muted); padding: 1rem; border-radius: 12px;
+      font-size: 0.7rem; overflow: auto; max-height: 180px; margin-top: 0; display: none;
+      font-family: 'SF Mono', monospace; border: 1px solid var(--border);
+    }
+    .badge {
+      display: inline-block; padding: 0.3rem 0.6rem; border-radius: 6px;
+      font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;
+    }
+    .badge.p2p { background: rgba(48,209,88,0.2); color: var(--success); }
+    .badge.relay { background: rgba(255,69,58,0.2); color: var(--error); }
   </style>
 </head>
 <body>
   <div class="container">
     <div id="status" class="status">🔌 Не подключено</div>
-    <div id="reconnectBanner" class="reconnect-banner">⚠️ Связь потеряна. Обменяйтесь кодами заново, чат сохранится.</div>
 
+    <!-- START SCREEN -->
     <div class="card" id="startPanel">
       <h2>🔐 FireChat P2P</h2>
       <label>Введите ваше имя:</label>
@@ -65,49 +112,53 @@
         <button class="btn-primary" id="createBtn">🚀 Создать</button>
         <button class="btn-secondary" id="joinBtn">🔗 Присоединиться</button>
       </div>
-      <div class="hint">💡 Работает в любой сети. История сохраняется локально.</div>
     </div>
 
+    <!-- INITIATOR SCREEN (Creator) -->
     <div class="card hidden" id="initiatorPanel">
       <h2>📤 Код комнаты</h2>
       <label>1️⃣ Отправьте этот код другу:</label>
       <textarea id="offerOutput" readonly></textarea>
       <div class="btn-row"><button class="btn-secondary" id="copyOffer">📋 Копировать</button></div>
+      
       <label style="margin-top:1rem;">2️⃣ Вставьте ответ друга:</label>
       <textarea id="answerInput" placeholder="Ответ друга..."></textarea>
       <div class="btn-row">
         <button class="btn-primary" id="connectBtn">✅ Подключить</button>
-        <button class="btn-danger" id="cancelBtn1">❌</button>
+        <button class="btn-danger" id="cancelBtn1">❌ Отмена</button>
       </div>
     </div>
 
+    <!-- JOINER SCREEN (Joiner) -->
     <div class="card hidden" id="joinerPanel">
       <h2>📥 Подключение</h2>
       <label>1️⃣ Вставьте код комнаты:</label>
       <textarea id="offerInput" placeholder="Код комнаты..."></textarea>
       <div class="btn-row"><button class="btn-primary" id="generateAnswer">🔗 Подключиться</button></div>
+      
       <label style="margin-top:1rem;">2️⃣ Отправьте этот ответ другу:</label>
       <textarea id="answerOutput" readonly></textarea>
       <div class="btn-row">
         <button class="btn-secondary" id="copyAnswer">📋 Копировать</button>
-        <button class="btn-danger" id="cancelBtn2">❌</button>
+        <button class="btn-danger" id="cancelBtn2">❌ Отмена</button>
       </div>
     </div>
 
+    <!-- CHAT SCREEN -->
     <div class="card hidden" id="chatPanel">
       <h2>💬 Чат <span id="badge" class="badge hidden"></span></h2>
       <div id="messages"></div>
-      <div class="chat-row">
-        <input type="text" id="msgInput" placeholder="Сообщение..." autocomplete="off">
-        <button class="btn-primary" id="sendBtn">➤</button>
+      <div class="chat-row" style="display:flex; gap:0.5rem; margin-top:1rem;">
+        <input type="text" id="msgInput" placeholder="Сообщение..." style="margin:0; flex:1;">
+        <button class="btn-primary" id="sendBtn" style="flex:0 0 auto; width:48px;">➤</button>
       </div>
-      <div class="file-area">
+      <div class="file-area" style="margin-top:1rem;">
         <input type="file" id="fileInput" style="display:none;">
         <button class="btn-secondary" onclick="document.getElementById('fileInput').click()">📎 Файл</button>
         <div class="progress-wrap hidden" id="fileProgressWrap"><div class="progress-bar" id="fileProgressBar"></div></div>
         <div class="file-status" id="fileStatus"></div>
       </div>
-      <button class="btn-danger" style="margin-top:1rem; width:100%;" onclick="if(confirm('Очистить историю и выйти?')){localStorage.removeItem('firechat_history'); location.reload();}">🗑 Сбросить и выйти</button>
+      <button class="btn-danger" style="margin-top:1rem; width:100%;" onclick="location.reload()">🔄 Полный сброс</button>
     </div>
 
     <pre id="logs"></pre>
@@ -115,18 +166,15 @@
   <div class="logs-toggle" onclick="document.getElementById('logs').style.display = document.getElementById('logs').style.display === 'block' ? 'none' : 'block'">🐞 Логи</div>
 
 <script>
-  // 🌍 ОБНОВЛЁННАЯ КОНФИГУРАЦИЯ СЕРВЕРОВ
+  // 🌍 STUN/TURN CONFIG (Reliable public servers)
   const PC_CONFIG = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.google.com:19302' },
-      { urls: 'stun:stun3.google.com:19302' },
-      { urls: 'stun:stun4.google.com:19302' },
       { urls: 'stun:stun.cloudflare.com:3478' },
       { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
     ],
     iceTransportPolicy: 'all',
     bundlePolicy: 'max-bundle',
@@ -135,41 +183,28 @@
 
   let pc, dc, myName, role = 'none', iceTimeout;
 
+  // Utils
   const log = m => {
     console.log(m);
     const el = document.getElementById('logs');
     el.textContent += `[${new Date().toLocaleTimeString()}] ${m}\n`;
     el.scrollTop = el.scrollHeight;
   };
-
   const setStatus = (txt, cls) => {
     const el = document.getElementById('status');
     el.textContent = txt;
     el.className = `status ${cls || ''}`;
   };
-
   const setBadge = (type, text) => {
     const b = document.getElementById('badge');
     b.textContent = text;
     b.className = `badge ${type}`;
     b.classList.remove('hidden');
   };
-
   const show = id => document.getElementById(id).classList.remove('hidden');
   const hide = id => document.getElementById(id).classList.add('hidden');
-
-  // 💾 Сохранение и загрузка чата
-  function saveHistory() {
-    localStorage.setItem('firechat_history', document.getElementById('messages').innerHTML);
-  }
   
-  function loadHistory() {
-    const h = localStorage.getItem('firechat_history');
-    if (h) document.getElementById('messages').innerHTML = h;
-  }
-
   const pack = d => btoa(JSON.stringify(d));
-  
   const unpack = s => {
     try {
       let clean = (s || '').replace(/[\s\n\r\u200B-\u200D\uFEFF]/g, '').trim();
@@ -177,17 +212,19 @@
       clean = clean.replace(/-/g, '+').replace(/_/g, '/');
       while (clean.length % 4) clean += '=';
       return JSON.parse(atob(clean));
-    } catch { return null; }
+    } catch (e) { return null; }
   };
 
+  // Wait for ICE candidates (max 15s)
   const waitIce = pc => new Promise(resolve => {
     if (pc.iceGatheringState === 'complete') return resolve();
     const onState = () => { if (pc.iceGatheringState === 'complete') { cleanup(); resolve(); } };
     pc.onicegatheringstatechange = onState;
-    iceTimeout = setTimeout(() => { cleanup(); resolve(); }, 15000);
+    iceTimeout = setTimeout(() => { cleanup(); log('⏱ Продолжаем без всех кандидатов'); resolve(); }, 15000);
     const cleanup = () => { pc.onicegatheringstatechange = null; clearTimeout(iceTimeout); };
   });
 
+  // Initialize Peer Connection
   function makePC() {
     if (pc) pc.close();
     pc = new RTCPeerConnection(PC_CONFIG);
@@ -196,20 +233,17 @@
       log(`ICE: ${pc.iceConnectionState}`);
       if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
         setStatus('✅ Подключено', 'connected');
-        hide('reconnectBanner');
         checkConnectionType();
-      } else if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
-        setStatus('🔌 Связь потеряна', 'error');
-        show('reconnectBanner');
-        saveHistory();
-        log('⚠️ Соединение разорвано. Чат сохранён.');
+      } else if (pc.iceConnectionState === 'failed') {
+        setStatus('❌ Не удалось соединиться', 'error');
+        setBadge('relay', 'Попробуйте ещё раз');
       }
     };
-
     pc.onconnectionstatechange = () => log(`PC: ${pc.connectionState}`);
     return pc;
   }
 
+  // Check Connection Type (P2P vs Relay)
   async function checkConnectionType() {
     try {
       const stats = await pc.getStats();
@@ -220,28 +254,26 @@
             const local = stats.get(pair.localCandidateId);
             if (local) {
               if (local.candidateType === 'host' || local.candidateType === 'srflx') {
-                setBadge('p2p', '🌐 Прямое P2P'); log('✅ Трафик НАПРЯМУЮ');
-              } else {
-                setBadge('relay', '🔄 Ретрансляция'); log('⚠️ Через TURN');
+                setBadge('p2p', '🌐 Прямое P2P'); log('✅ Трафик идёт НАПРЯМУЮ');
+              } else if (local.candidateType === 'relay') {
+                setBadge('relay', '🔄 Через TURN'); log('⚠️ Трафик через ретранслятор');
               }
               return;
             }
           }
         }
       }
-    } catch {}
+    } catch (e) {}
   }
 
+  // Setup DataChannel
   function setupDC() {
     dc.onopen = () => {
       log('💬 DataChannel открыт');
       setStatus('✅ Подключено', 'connected');
       hide('startPanel'); hide('initiatorPanel'); hide('joinerPanel');
       show('chatPanel');
-      hide('reconnectBanner');
-      if (!document.querySelector('.msg.system')) {
-        addMsg('🤖 Система', 'Канал связи установлен. Шифрование активно.', false, true);
-      }
+      addMsg('🤖 FireChat', 'Подключено. Шифрование: DTLS AES-GCM', false);
     };
     dc.onmessage = e => {
       const raw = e.data;
@@ -251,16 +283,18 @@
         if (msg.type === 'text') addMsg(msg.user, msg.text, false);
         else if (msg.type === 'file_meta') initFileReceive(msg);
         else if (msg.type === 'file_end') finalizeFileReceive();
-      } catch {}
+      } catch (err) {}
     };
     dc.onclose = () => {
-      log('🔌 Канал закрыт');
+      log('🔌 Отключено');
       setStatus('🔌 Отключено', 'error');
-      show('reconnectBanner');
-      saveHistory();
+      hide('chatPanel');
+      show('startPanel');
     };
+    dc.onerror = err => log('DC error: ' + (err.message || err));
   }
 
+  // Copy Helper
   function copyText(elId) {
     const el = document.getElementById(elId);
     el.select(); el.setSelectionRange(0, 99999);
@@ -268,38 +302,46 @@
     catch { document.execCommand('copy'); }
   }
 
+  // === UI LOGIC ===
+
+  // 1. Create Room
   document.getElementById('createBtn').onclick = async () => {
     myName = document.getElementById('username').value.trim() || 'Аноним';
     role = 'initiator';
     hide('startPanel'); show('initiatorPanel');
     setStatus('⏳ Генерация...', 'connecting');
-    loadHistory();
+
     makePC();
     dc = pc.createDataChannel('chat', { ordered: true });
     setupDC();
+
     try {
       await pc.setLocalDescription(await pc.createOffer());
       await waitIce(pc);
       document.getElementById('offerOutput').value = pack({ type: 'offer', sdp: pc.localDescription?.sdp });
       log('📤 Код создан');
-    } catch (e) { log('❌ ' + e.message); }
+    } catch (e) { log('❌ Ошибка: ' + e.message); setStatus('❌ Ошибка', 'error'); }
   };
 
+  // 2. Join Room (Show Input)
   document.getElementById('joinBtn').onclick = () => {
     myName = document.getElementById('username').value.trim() || 'Аноним';
     role = 'joiner';
     hide('startPanel'); show('joinerPanel');
     setStatus('🔗 Ожидание...', 'connecting');
-    loadHistory();
   };
 
+  // 3. Generate Answer (Joiner Logic)
   document.getElementById('generateAnswer').onclick = async () => {
     const code = document.getElementById('offerInput').value;
-    if (!code.trim()) return alert('Вставьте код!');
+    if (!code.trim()) return alert('Вставьте код комнаты!');
+
     makePC();
     pc.ondatachannel = e => { dc = e.channel; setupDC(); };
+
     const data = unpack(code);
-    if (!data || data.type !== 'offer') return alert('Ошибка формата');
+    if (!data || data.type !== 'offer') return alert('Неверный формат кода.');
+
     try {
       await pc.setRemoteDescription({ type: 'offer', sdp: data.sdp });
       const ans = await pc.createAnswer();
@@ -307,106 +349,126 @@
       await waitIce(pc);
       document.getElementById('answerOutput').value = pack({ type: 'answer', sdp: pc.localDescription?.sdp });
       log('📤 Ответ создан');
-    } catch (e) { log('❌ ' + e.message); alert('Ошибка'); }
+    } catch (e) { log('❌ Ошибка: ' + e.message); alert('Ошибка: ' + e.message); }
   };
 
-  // 🔧 ИСПРАВЛЕННАЯ ЛОГИКА КНОПКИ "ПОДКЛЮЧИТЬ"
+  // 4. Connect (Initiator Logic - Apply Answer)
   document.getElementById('connectBtn').onclick = async () => {
     const code = document.getElementById('answerInput').value;
-    if (!code.trim()) return alert('Вставьте ответ!');
+    if (!code.trim()) return alert('Вставьте ответ друга!');
     
-    if (pc && dc && dc.readyState === 'open') {
-      hide('startPanel'); hide('initiatorPanel'); show('chatPanel');
-      return;
+    // Protection against double click
+    if (pc && pc.signalingState === 'stable') {
+        log('⚠️ Уже подключено или в процессе');
+        return;
     }
 
     const data = unpack(code);
-    if (!data || !data.sdp) return alert('Ошибка формата');
+    if (!data || !data.sdp) return alert('Неверный формат ответа.');
 
     try {
-      if (pc.signalingState === 'stable') {
-        makePC(); dc = pc.createDataChannel('chat', { ordered: true }); setupDC();
-      }
       if (pc.signalingState === 'have-local-offer') {
         await pc.setRemoteDescription({ type: data.type || 'answer', sdp: data.sdp });
         setStatus('🔄 Подключение...', 'connecting');
         log('🔗 Ответ принят');
+      } else {
+        throw new Error(`Неверное состояние: ${pc.signalingState}`);
       }
     } catch (e) {
-      log('❌ ' + e.message);
-      if (e.message.includes('stable')) {
-        hide('startPanel'); hide('initiatorPanel'); show('chatPanel');
-        setStatus('✅ Подключено', 'connected');
-      }
+      log('❌ Ошибка: ' + e.message);
+      alert('Ошибка: ' + e.message);
     }
   };
 
+  // Buttons
   document.getElementById('copyOffer').onclick = () => copyText('offerOutput');
   document.getElementById('copyAnswer').onclick = () => copyText('answerOutput');
-  document.getElementById('cancelBtn1').onclick = () => { localStorage.removeItem('firechat_history'); location.reload(); };
-  document.getElementById('cancelBtn2').onclick = () => { localStorage.removeItem('firechat_history'); location.reload(); };
+  document.getElementById('cancelBtn1').onclick = () => location.reload();
+  document.getElementById('cancelBtn2').onclick = () => location.reload();
 
+  // Send Message
   document.getElementById('sendBtn').onclick = () => {
     const inp = document.getElementById('msgInput');
     const txt = inp.value.trim();
     if (!txt || !dc || dc.readyState !== 'open') return;
     dc.send(JSON.stringify({ type: 'text', user: myName, text: txt }));
     addMsg(myName, txt, true);
-    inp.value = '';
-    saveHistory();
+    inp.value = ''; inp.focus();
   };
 
   document.getElementById('msgInput').addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('sendBtn').click(); }
   });
 
-  function addMsg(user, text, me, isSys=false) {
+  function addMsg(user, text, me) {
     const div = document.createElement('div');
-    div.className = `msg ${me ? 'me' : 'other'} ${isSys ? 'system' : ''}`;
+    div.className = `msg ${me ? 'me' : 'other'}`;
     div.innerHTML = `<div class="time">${user}</div>${text.replace(/</g, '&lt;')}`;
     document.getElementById('messages').appendChild(div);
     document.getElementById('messages').scrollTop = 9999;
-    saveHistory();
   }
 
-  const CHUNK = 16384; let fileRx = { id: '', name: '', size: 0, chunks: [], received: 0 };
+  // === FILE TRANSFER ===
+  const CHUNK = 16384;
+  let fileRx = { id: '', name: '', size: 0, chunks: [], received: 0 };
+
   document.getElementById('fileInput').onchange = async e => {
     const file = e.target.files[0];
     if (!file || !dc || dc.readyState !== 'open') return;
+
     const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
     dc.send(JSON.stringify({ type: 'file_meta', id, name: file.name, size: file.size }));
-    show('fileProgressWrap'); document.getElementById('fileStatus').textContent = 'Отправка...';
-    const reader = file.stream().getReader(); let idx = 0;
-    while (true) { 
-      const { done, value } = await reader.read(); if (done) break; 
-      while (dc.bufferedAmount > 100000) await new Promise(r => setTimeout(r, 50)); 
-      dc.send(value); idx++; 
-      document.getElementById('fileProgressBar').style.width = Math.min(100, Math.round((idx*CHUNK/file.size)*100))+'%'; 
+    log(`📤 Файл: ${file.name}`);
+
+    show('fileProgressWrap');
+    document.getElementById('fileStatus').textContent = 'Отправка...';
+
+    const reader = file.stream().getReader();
+    let idx = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      while (dc.bufferedAmount > 100000) await new Promise(r => setTimeout(r, 50));
+      dc.send(value);
+      idx++;
+      const pct = Math.min(100, Math.round((idx * CHUNK / file.size) * 100));
+      document.getElementById('fileProgressBar').style.width = pct + '%';
+      document.getElementById('fileStatus').textContent = `${pct}%`;
     }
-    dc.send(JSON.stringify({ type: 'file_end', id })); 
-    setTimeout(() => { hide('fileProgressWrap'); document.getElementById('fileStatus').textContent = '✅'; }, 600); 
+    dc.send(JSON.stringify({ type: 'file_end', id }));
+    setTimeout(() => { hide('fileProgressWrap'); document.getElementById('fileStatus').textContent = '✅ Отправлено'; }, 600);
     e.target.value = '';
   };
 
-  function handleFileChunk(buf) { 
-    if (!fileRx.id) return; 
-    fileRx.chunks.push(new Uint8Array(buf)); 
-    fileRx.received += buf.byteLength; 
-    document.getElementById('fileProgressBar').style.width = Math.round((fileRx.received/fileRx.size)*100)+'%'; 
+  function handleFileChunk(buf) {
+    if (!fileRx.id) return;
+    fileRx.chunks.push(new Uint8Array(buf));
+    fileRx.received += buf.byteLength;
+    const pct = Math.round((fileRx.received / fileRx.size) * 100);
+    document.getElementById('fileProgressBar').style.width = pct + '%';
+    document.getElementById('fileStatus').textContent = `Получение: ${pct}%`;
   }
-  function initFileReceive(meta) { 
-    fileRx = { id: meta.id, name: meta.name, size: meta.size, chunks: [], received: 0 }; 
-    show('fileProgressWrap'); document.getElementById('fileProgressBar').style.width = '0%'; 
-    document.getElementById('fileStatus').textContent = `Получение: ${meta.name}`; 
+
+  function initFileReceive(meta) {
+    fileRx = { id: meta.id, name: meta.name, size: meta.size, chunks: [], received: 0 };
+    show('fileProgressWrap');
+    document.getElementById('fileProgressBar').style.width = '0%';
+    document.getElementById('fileStatus').textContent = `Получение: ${meta.name}`;
+    addMsg('📥', `Загрузка ${meta.name}...`, false);
   }
-  function finalizeFileReceive() { 
-    const blob = new Blob(fileRx.chunks); 
-    const url = URL.createObjectURL(blob); 
-    const a = document.createElement('a'); a.href = url; a.download = fileRx.name; 
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); 
-    hide('fileProgressWrap'); 
-    addMsg('📥', `✅ <a href="${url}" download="${fileRx.name}" style="color:var(--accent)">${fileRx.name}</a>`, false); 
-    fileRx = { id: '', name: '', size: 0, chunks: [], received: 0 }; 
+
+  function finalizeFileReceive() {
+    try {
+      const blob = new Blob(fileRx.chunks);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = fileRx.name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      hide('fileProgressWrap');
+      addMsg('📥', `✅ <a href="${url}" download="${fileRx.name}" style="color:var(--accent)">${fileRx.name}</a>`, false);
+      log(`✅ Файл сохранён`);
+    } catch (e) { log('❌ Ошибка файла'); document.getElementById('fileStatus').textContent = '❌'; }
+    fileRx = { id: '', name: '', size: 0, chunks: [], received: 0 };
   }
 </script>
 </body>
